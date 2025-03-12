@@ -72,7 +72,39 @@ void Error_Handler(void);
 #define RED_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#define true  (1)
+#define false (0)
 
+/*******************************************************************************
+ * printf
+ ******************************************************************************/
+#include "usbd_cdc_if.h"
+
+#define MAX_LEN_USB_CMD (10)
+#define USB_Transmit(buf)                                                      \
+  {                                                                            \
+    uint8_t usb_ret;                                                           \
+    do {                                                                       \
+      usb_ret = CDC_Transmit_FS((uint8_t *)buf, strlen((const char *)buf));    \
+    } while (usb_ret == USBD_BUSY);                                            \
+  }
+#define USB_Command(CMD) \
+  (strncmp((const char *)UserRxBufferFS, usb_cmd[CMD], strlen(usb_cmd[CMD])) == 0)
+
+#ifdef DEBUG
+#define DEBUG_MSG(...) printf(__VA_ARGS__)
+#else /* DEBUG */
+#define DEBUG_MSG(...)
+#endif /* DEBUG */
+
+
+/*******************************************************************************
+ * traffic light control
+ ******************************************************************************/
+#define RED(POWER) \
+  HAL_GPIO_WritePin(RED_GPIO_Port, RED_Pin, POWER ? GPIO_PIN_SET : GPIO_PIN_RESET);
+#define GREEN(POWER) \
+  HAL_GPIO_WritePin(GREEN_GPIO_Port, GREEN_Pin, POWER ? GPIO_PIN_SET : GPIO_PIN_RESET);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

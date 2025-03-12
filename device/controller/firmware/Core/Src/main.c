@@ -27,11 +27,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdint.h>
-
-#include "LoRa.h"
-
-#define DEVICE_TYPE_CONTROLLER
-#include "common.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
