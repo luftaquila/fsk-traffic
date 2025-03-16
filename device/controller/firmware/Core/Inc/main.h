@@ -59,13 +59,12 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin GPIO_PIN_13
 #define LED_GPIO_Port GPIOC
-#define NSS_Pin GPIO_PIN_12
-#define NSS_GPIO_Port GPIOB
-#define RST_Pin GPIO_PIN_9
-#define RST_GPIO_Port GPIOA
-#define DIO0_Pin GPIO_PIN_10
-#define DIO0_GPIO_Port GPIOA
-#define DIO0_EXTI_IRQn EXTI15_10_IRQn
+#define SENS2_Pin GPIO_PIN_12
+#define SENS2_GPIO_Port GPIOB
+#define SENS2_EXTI_IRQn EXTI15_10_IRQn
+#define SENS1_Pin GPIO_PIN_13
+#define SENS1_GPIO_Port GPIOB
+#define SENS1_EXTI_IRQn EXTI15_10_IRQn
 #define GREEN_Pin GPIO_PIN_8
 #define GREEN_GPIO_Port GPIOB
 #define RED_Pin GPIO_PIN_9
@@ -78,8 +77,6 @@ void Error_Handler(void);
 /*******************************************************************************
  * printf
  ******************************************************************************/
-#include "usbd_cdc_if.h"
-
 #define MAX_LEN_USB_CMD (10)
 #define USB_Transmit(buf)                                                      \
   {                                                                            \
