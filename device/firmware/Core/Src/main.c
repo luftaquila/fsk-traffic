@@ -25,7 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdint.h>
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,26 +51,13 @@ uint32_t usb_rcv_flag = false;
 extern uint8_t UserRxBufferFS[];
 extern uint8_t UserTxBufferFS[];
 
-/* USB CDC command from the host system */
-typedef enum {
-  CMD_HELLO,
-  CMD_SENSOR,
-  CMD_GREEN,
-  CMD_RED,
-  CMD_OFF,
-  CMD_RESET,
-  CMD_COUNT,
-} usb_cmd_type_t;
-
-const char usb_cmd[CMD_COUNT][MAX_LEN_USB_CMD + 1] = {
-  "$HELLO",
-  "$SENSOR",
-  "$GREEN",
-  "$RED",
-  "$OFF",
-  "$RESET",
+const char usb_cmd[][3] = {
+  "$H", // HELLO
+  "$G", // GREEN
+  "$R", // RED
+  "$X", // OFF
+  "$R", // RESET
 };
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,11 +69,22 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-  if (GPIO_Pin == SENS1_Pin) {
+  uint32_t tick = HAL_GetTick();
+  uint32_t sensor = 0;
 
-  } else if (GPIO_Pin == SENS2_Pin) {
-
+  switch (GPIO_Pin) {
+    case SENS1_Pin:
+      sensor = 1;
+      break;
+    case SENS2_Pin:
+      sensor = 2;
+      break;
+    default:
+      break;
   }
+
+  sprintf((char *)UserTxBufferFS, "$S %lu %lu!", sensor, tick);
+  USB_Transmit(UserTxBufferFS);
 }
 
 int _write(int file, uint8_t *ptr, int len) {
@@ -138,11 +136,38 @@ int main(void)
     HAL_Delay(200);
   }
 
+  // greetings
+  while (!usb_rcv_flag) {
+    usb_rcv_flag = false;
+
+    if (USB_Command(CMD_HELLO)) {
+      USB_Transmit("$HI!");
+      break;
+    }
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1) {
+    if (usb_rcv_flag) {
+      usb_rcv_flag = false;
+
+      if (USB_Command(CMD_GREEN)) {
+        GREEN(true);
+        RED(false);
+      } else if (USB_Command(CMD_RED)) {
+        GREEN(false);
+        RED(true);
+      } else if (USB_Command(CMD_OFF)) {
+        GREEN(false);
+        RED(false);
+      } else if (USB_Command(CMD_RESET)) {
+        HAL_NVIC_SystemReset();
+      } else {
+        USB_Transmit("$E!");
+      }
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

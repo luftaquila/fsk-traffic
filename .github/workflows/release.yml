@@ -23,7 +23,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: |
-          zip -r firmware-${{ github.ref_name }}.zip controller
+          zip -r firmware-${{ github.ref_name }}.zip firmware
           (cd build.fsk-traffic-control-macos-arm64 && zip -r ../fsk-traffic-control-macos-arm64-${{ github.ref_name }}.app.zip .)
           mv build.fsk-traffic-control-windows-x64/fsk-traffic-control.exe fsk-traffic-control-windows-x64-${{ github.ref_name }}.exe
           mv build.fsk-traffic-control-linux-x64/fsk-traffic-control*.AppImage fsk-traffic-control-linux-x64-${{ github.ref_name }}.AppImage
