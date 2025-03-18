@@ -51,6 +51,9 @@ volatile uint32_t usb_rcv_flag = false;
 extern uint8_t UserRxBufferFS[];
 extern uint8_t UserTxBufferFS[];
 
+volatile uint32_t sensor_flag = false;
+uint32_t sensor_tick[2];
+
 const char usb_cmd[][3] = {
   "$H", // HELLO
   "$G", // GREEN
@@ -69,22 +72,18 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-  uint32_t tick = HAL_GetTick();
-  uint32_t sensor = 0;
-
   switch (GPIO_Pin) {
     case SENS1_Pin:
-      sensor = 1;
+      sensor_flag |= 1 << 0;
+      sensor_tick[0] = HAL_GetTick();
       break;
     case SENS2_Pin:
-      sensor = 2;
+      sensor_flag |= 1 << 1;
+      sensor_tick[1] = HAL_GetTick();
       break;
     default:
       break;
   }
-
-  sprintf((char *)UserTxBufferFS, "$S %lu %lu!\n", sensor, tick);
-  USB_Transmit(UserTxBufferFS);
 }
 
 int _write(int file, uint8_t *ptr, int len) {
@@ -142,10 +141,21 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (true) {
-    if (usb_rcv_flag) {
-      usb_rcv_flag = false;
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+    if (sensor_flag) {
+      if (sensor_flag & (1 << 0)) {
+        sprintf((char *)UserTxBufferFS, "$S 1 %lu!\n", sensor_tick[0]);
+        USB_Transmit(UserTxBufferFS);
+        sensor_flag &= ~(1 << 0);
+      }
 
+      if (sensor_flag & (1 << 1)) {
+        sprintf((char *)UserTxBufferFS, "$S 2 %lu!\n", sensor_tick[1]);
+        USB_Transmit(UserTxBufferFS);
+        sensor_flag &= ~(1 << 1);
+      }
+    }
+
+    if (usb_rcv_flag) {
       if (USB_Command(CMD_GREEN)) {
         GREEN(true);
         RED(false);
@@ -162,6 +172,9 @@ int main(void)
       } else {
         USB_Transmit("$E!\n");
       }
+
+      usb_rcv_flag = false;
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
     }
     /* USER CODE END WHILE */
 
