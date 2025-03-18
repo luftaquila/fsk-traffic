@@ -227,13 +227,14 @@ clean:
 # debug mode
 #######################################
 debug:
-	make DEBUG=1 && openocd -f ../../common/fsk-traffic-control.cfg
+	make DEBUG=1 all
+	openocd -f fsk-traffic-control.cfg
 
 #######################################
 # program
 #######################################
-program:
-	make && openocd -f ../../common/fsk-traffic-control.cfg
+program: all
+	openocd -f fsk-traffic-control.cfg
 
 #######################################
 # attach
