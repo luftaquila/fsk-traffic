@@ -47,7 +47,7 @@
 
 /* USER CODE BEGIN PV */
 /* USB buffer and flag */
-uint32_t usb_rcv_flag = false;
+volatile uint32_t usb_rcv_flag = false;
 extern uint8_t UserRxBufferFS[];
 extern uint8_t UserTxBufferFS[];
 
@@ -83,7 +83,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
       break;
   }
 
-  sprintf((char *)UserTxBufferFS, "$S %lu %lu!", sensor, tick);
+  sprintf((char *)UserTxBufferFS, "$S %lu %lu!\n", sensor, tick);
   USB_Transmit(UserTxBufferFS);
 }
 
@@ -126,32 +126,25 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
   // flash traffic light 3 times
   for (int i = 0; i < 6; i++) {
     // on at even, off at odd
     RED(!(i & 0b01));
     GREEN(!(i & 0b01));
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
     HAL_Delay(200);
   }
 
-  // greetings
-  while (!usb_rcv_flag) {
-    usb_rcv_flag = false;
-
-    if (USB_Command(CMD_HELLO)) {
-      USB_Transmit("$HI!");
-      break;
-    }
-  }
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1) {
+  while (true) {
     if (usb_rcv_flag) {
       usb_rcv_flag = false;
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
       if (USB_Command(CMD_GREEN)) {
         GREEN(true);
@@ -164,8 +157,10 @@ int main(void)
         RED(false);
       } else if (USB_Command(CMD_RESET)) {
         HAL_NVIC_SystemReset();
+      } else if (USB_Command(CMD_HELLO)) {
+        USB_Transmit("$HI!\n");
       } else {
-        USB_Transmit("$E!");
+        USB_Transmit("$E!\n");
       }
     }
     /* USER CODE END WHILE */

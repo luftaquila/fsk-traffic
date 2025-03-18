@@ -90,7 +90,7 @@ typedef enum {
 
 #define USB_Transmit(buf)                                                      \
   {                                                                            \
-    uint8_t usb_ret;                                                           \
+    volatile uint8_t usb_ret;                                                           \
     do {                                                                       \
       usb_ret = CDC_Transmit_FS((uint8_t *)buf, strlen((const char *)buf));    \
     } while (usb_ret == USBD_BUSY);                                            \
