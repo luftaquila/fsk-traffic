@@ -72,14 +72,20 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+  uint32_t tick = HAL_GetTick();
+
   switch (GPIO_Pin) {
     case SENS1_Pin:
-      sensor_flag |= 1 << 0;
-      sensor_tick[0] = HAL_GetTick();
+      if (tick - sensor_tick[0] > 200) {
+        sensor_flag |= 1 << 0;
+        sensor_tick[0] = tick;
+      }
       break;
     case SENS2_Pin:
-      sensor_flag |= 1 << 1;
-      sensor_tick[1] = HAL_GetTick();
+      if (tick - sensor_tick[1] > 200) {
+        sensor_flag |= 1 << 1;
+        sensor_tick[1] = HAL_GetTick();
+      }
       break;
     default:
       break;
