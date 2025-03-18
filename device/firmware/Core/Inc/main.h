@@ -86,7 +86,7 @@ typedef enum {
 } usb_cmd_type_t;
 
 #define USB_Command(CMD) \
-  (strncmp((const char *)UserRxBufferFS, usb_cmd[CMD], strlen(usb_cmd[CMD])) == 0)
+  (strncmp((const char *)UserRxBufferFS, usb_cmd[CMD], 2) == 0)
 
 #define USB_Transmit(buf)                                                      \
   {                                                                            \
