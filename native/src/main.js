@@ -37,6 +37,10 @@ const selector = {
     deselect: document.querySelectorAll('button.deselect-team'),
   },
   event: document.querySelector('input.event-name'),
+  record: {
+    start: document.getElementById('record-start'),
+    end: document.getElementById('record-end'),
+  }
 };
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -100,12 +104,24 @@ event.listen('serial-data', async event => {
       controller.green.tick = Number(str.slice(6));
       controller.green.timestamp = new Date();
 
-      if (current === 'lap') {
-        controller.start.tick = controller.green.tick;
-        controller.start.timestamp = controller.green.timestamp;
-        controller.clock = setInterval(() => {
-          selector.clock.lap.innerText = ms_to_clock(new Date() - controller.start.timestamp);
-        }, 7);
+      selector.clock.all.forEach(el => el.innerText = "00:00:00.000");
+      document.querySelectorAll('tr.record').forEach(el => el.remove());
+
+      switch (current) {
+        case 'record': {
+          controller.start.tick = undefined;
+          controller.start.timestamp = undefined;
+          break;
+        }
+
+        case 'lap': {
+          controller.start.tick = controller.green.tick;
+          controller.start.timestamp = controller.green.timestamp;
+          controller.clock = setInterval(() => {
+            selector.clock.lap.innerText = ms_to_clock(new Date() - controller.start.timestamp);
+          }, 7);
+          break;
+        }
       }
 
       selector.light.forEach(el => el.style["background-color"] = "green");
@@ -146,8 +162,6 @@ event.listen('serial-data', async event => {
         selector.traffic.red.forEach(el => el.classList.remove('disabled'));
         selector.traffic.off.forEach(el => el.classList.add('disabled'));
       }
-
-      selector.clock.all.forEach(el => el.innerText = "00:00:00.000");
       // selector.team.select.forEach(el => el.dispatchEvent(new Event("change", { bubbles: true })));
     }
 
@@ -158,7 +172,7 @@ event.listen('serial-data', async event => {
     else if (str.startsWith("$S")) {
       let timestamp = new Date();
 
-      let sensor = Number(str.slice(3, 1));
+      let sensor = Number(str.slice(3, 4));
       let tick = Number(str.slice(5));
 
       if (!controller.green.active) {
@@ -178,17 +192,32 @@ event.listen('serial-data', async event => {
               }, 7);
             }
 
+            let tr = document.createElement('tr');
+            tr.classList.add('record');
+            tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
+            selector.record.start.querySelector('tbody').appendChild(tr);
           } else {
             if (!controller.start.timestamp) {
               return;
             }
 
+            let tr = document.createElement('tr');
+            tr.classList.add('record');
+            tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
+            selector.record.end.querySelector('tbody').appendChild(tr);
           }
           break;
         }
 
         case 'lap': {
-          // TODO: impl
+          if (!controller.start.timestamp) {
+            return;
+          }
+
+          let tr = document.createElement('tr');
+          tr.classList.add('record');
+          tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
+          document.getElementById(`lap-${sensor}`).appendChild(tr);
           break;
         }
 
@@ -313,7 +342,8 @@ async function setup() {
 
           if (deselect) {
             target.innerHTML = '‎';
-            target.closest('.time-table').style.display = "none";
+            let tables = [...document.getElementsByClassName(target.closest('.lap-table').classList)];
+            tables.forEach(el => el.style.display = "none");
           } else {
             if (teams.filter(x => x === entry.number).length > 1) {
               e.target.options[0].selected = true;
@@ -322,7 +352,8 @@ async function setup() {
             }
             
             target.innerHTML = `${entry.number} ${entry.univ} ${entry.team}`;
-            target.closest('.time-table').style.display = "table";
+            let tables = [...document.getElementsByClassName(target.closest('.lap-table').classList)];
+            tables.forEach(el => el.style.display = "table");
           }
           break;
         }

@@ -174,26 +174,46 @@ input.sensor-id {
   word-break: keep-all;
 }
 
-.entry-team-time {
-  margin-top: 1.5rem;
-  font-size: 1.8rem;
-  font-family: "Departure Mono";
-  text-shadow: 1px 1px 2px grey;
-}
-
-.time-container {
+#time-record {
   display: flex;
-  gap: 1.5rem;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7rem;
   padding: 0 2rem;
+  margin-top: -1rem;
   font-size: 1.5rem;
 }
 
-.time-table {
-  width: 100%;
+#entry-lap, #time-lap {
+  display: flex;
+  padding: 0 2rem;
+  gap: 2rem;
+  margin-bottom: 0;
 }
 
-.time-table th {
-  padding: 0 0.5rem;
+#time-lap {
+  align-items: flex-start;
+  margin-top: 0;
+}
+
+.time-table {
+  width: 15rem;
+  border-spacing: 1rem;
+}
+
+.lap-table {
+  width: 100%;
+  border-spacing: 1rem;
+}
+
+.time-table th, .lap-table th {
+  padding-bottom: .5rem;
+}
+
+.time-table td, .lap-table td {
+  font-size: 1.5rem;
+  font-family: "Departure Mono";
+  text-shadow: 1px 1px 2px grey;
 }
 
 .match-config div i {
@@ -259,7 +279,7 @@ input.sensor-id {
   }
 
   50% {
-    opacity: 0;
+    opacity: 0.1;
   }
 }
 
@@ -276,8 +296,8 @@ input.sensor-id {
 }
 
 .blink {
-  animation: blink 0.5s ease-in-out 3, blink-final 0.3s ease-in 1 forwards;
-  animation-delay: 0s, 1.5s;
+  animation: blink 0.5s ease-in-out 1, blink-final 0.3s ease-in 1 forwards;
+  animation-delay: 0s, 0.5s;
 }
 
 /*******************************************************************************
