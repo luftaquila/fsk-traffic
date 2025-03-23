@@ -6,9 +6,13 @@ let notyf = new Notyf({ ripple: false, duration: 3500 });
 let current = "record";
 
 let controller = {
-  active: false,
+  start: {
+    tick: undefined,
+    timestamp: undefined,
+  },
   clock: undefined,
   green: {
+    active: false,
     tick: undefined,
     timestamp: undefined,
   },
@@ -44,9 +48,7 @@ window.addEventListener("DOMContentLoaded", async () => {
  ******************************************************************************/
 event.listen('serial-data', async event => {
   let rcv = event.payload;
-  console.log(`${Number(new Date())} ${rcv}`);
-
-  rcv = rcv.split('\n');
+  rcv = rcv.slice(rcv.indexOf('$')).match(/\$[^$]+!/g).map(x => x.slice(0, -1));
 
   // no protocol message found
   if (!rcv) {
@@ -55,7 +57,8 @@ event.listen('serial-data', async event => {
 
   // handle all protocol messages
   for (let str of rcv) {
-    // back up to the fsk-log.json
+    console.log(`${Number(new Date())} ${str}`);
+
     await invoke('append_file', {
       name: "fsk-log.json",
       data: JSON.stringify({
@@ -78,7 +81,11 @@ event.listen('serial-data', async event => {
       selector.connect.forEach(el => el.classList.remove('red'));
 
       selector.light.forEach(el => el.style["background-color"] = "grey");
-      selector.clock.forEach(el => el.innerText = "00:00:00.000");
+      selector.clock.all.forEach(el => el.innerText = "00:00:00.000");
+
+      selector.traffic.green.forEach(el => el.classList.remove('disabled'));
+      selector.traffic.red.forEach(el => el.classList.remove('disabled'));
+      selector.traffic.off.forEach(el => el.classList.remove('disabled'));
 
       notyf.success(`컨트롤러 연결 완료`);
     }
@@ -89,13 +96,15 @@ event.listen('serial-data', async event => {
      *   response: $OK G <tick>
      ************************************************************************/
     else if (str.startsWith("$OK G")) {
-      controller.active = true;
+      controller.green.active = true;
       controller.green.tick = Number(str.slice(6));
       controller.green.timestamp = new Date();
 
       if (current === 'lap') {
+        controller.start.tick = controller.green.tick;
+        controller.start.timestamp = controller.green.timestamp;
         controller.clock = setInterval(() => {
-          selector.clock.lap.innerText = ms_to_clock(new Date() - controller.green.timestamp);
+          selector.clock.lap.innerText = ms_to_clock(new Date() - controller.start.timestamp);
         }, 7);
       }
 
@@ -106,6 +115,8 @@ event.listen('serial-data', async event => {
       selector.team.select.forEach(el => el.classList.add('disabled'));
       selector.team.deselect.forEach(el => el.classList.add('disabled'));
       selector.traffic.green.forEach(el => el.classList.add('disabled'));
+      selector.traffic.red.forEach(el => el.classList.remove('disabled'));
+      selector.traffic.off.forEach(el => el.classList.remove('disabled'));
     }
 
     /*************************************************************************
@@ -114,7 +125,7 @@ event.listen('serial-data', async event => {
      *   response: $OK <R/X> <tick>
      ************************************************************************/
     else if (str.startsWith("$OK R") || str.startsWith("$OK X")) {
-      controller.active = false;
+      controller.green.active = false;
 
       if (controller.clock) {
         clearInterval(controller.clock);
@@ -150,7 +161,7 @@ event.listen('serial-data', async event => {
       let sensor = Number(str.slice(3, 1));
       let tick = Number(str.slice(5));
 
-      if (!controller.active) {
+      if (!controller.green.active) {
         return;
       }
 
@@ -158,10 +169,19 @@ event.listen('serial-data', async event => {
 
       switch (current) {
         case 'record': {
-          // TODO: impl
           if (sensor === 1) {
+            if (!controller.start.timestamp) {
+              controller.start.tick = tick;
+              controller.start.timestamp = timestamp;
+              controller.clock = setInterval(() => {
+                selector.clock.record.innerText = ms_to_clock(new Date() - controller.start.timestamp);
+              }, 7);
+            }
 
           } else {
+            if (!controller.start.timestamp) {
+              return;
+            }
 
           }
           break;
@@ -183,7 +203,7 @@ event.listen('serial-data', async event => {
  * serial failure handler                                                      *
  ******************************************************************************/
 event.listen('serial-error', async event => {
-  controller.active = false;
+  controller.green.active = false;
 
   if (controller.clock) {
     clearInterval(timer.clock);
@@ -233,7 +253,7 @@ async function setup() {
   /* title handler ************************************************************/
   document.querySelectorAll(`input.event-name`).forEach(el => {
     el.addEventListener("keyup", () => {
-      let mode = e.target.closest('div.container').id.replace("container-", "");
+      let mode = el.closest('div.container').id.replace("container-", "");
       document.getElementById(`${mode}-title`).innerText = `${new Date().getFullYear()} FSK ${el.value.trim()}`;
     });
   });
@@ -315,11 +335,11 @@ async function setup() {
     let container = elem.closest('div.container').id;
 
     elem.addEventListener("click", () => {
-      if (!document.querySelector(`${container} input.event-name`).value.trim()) {
+      if (!document.querySelector(`#${container} input.event-name`).value.trim()) {
         return notyf.error('이벤트 이름을 입력하세요.');
       }
 
-      if (!document.querySelectorAll(`${container} select.select-team`).filter(x => x.value !== "팀 선택").length) {
+      if (![...document.querySelectorAll(`#${container} select.select-team`)].filter(x => x.value !== "팀 선택").length) {
         return notyf.error('참가팀을 선택하세요.');
       }
 
