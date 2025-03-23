@@ -6,7 +6,7 @@
   },
   "package": {
     "productName": "fsk-traffic-control",
-    "version": "0.1.0"
+    "version": "2.0.0"
   },
   "tauri": {
     "allowlist": {
@@ -19,10 +19,8 @@
     "windows": [
       {
         "title": "fsk-traffic-control",
-        "width": 1800,
-        "height": 1100,
-        "x": 0,
-        "y": 0
+        "width": 1600,
+        "height": 950
       }
     ],
     "security": {

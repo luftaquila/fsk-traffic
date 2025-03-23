@@ -165,12 +165,16 @@ int main(void)
       if (USB_Command(CMD_GREEN)) {
         GREEN(true);
         RED(false);
+        sprintf((char *)UserTxBufferFS, "$OK G %lu!\n", HAL_GetTick());
+        USB_Transmit(UserTxBufferFS);
       } else if (USB_Command(CMD_RED)) {
         GREEN(false);
         RED(true);
+        USB_Transmit("$OK R!\n");
       } else if (USB_Command(CMD_OFF)) {
         GREEN(false);
         RED(false);
+        USB_Transmit("$OK X!\n");
       } else if (USB_Command(CMD_RESET)) {
         HAL_NVIC_SystemReset();
       } else if (USB_Command(CMD_HELLO)) {
