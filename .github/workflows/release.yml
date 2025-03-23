@@ -26,7 +26,7 @@ jobs:
           zip -r firmware-${{ github.ref_name }}.zip firmware
           (cd build.fsk-traffic-control-macos-arm64 && zip -r ../fsk-traffic-control-macos-arm64-${{ github.ref_name }}.app.zip .)
           mv build.fsk-traffic-control-windows-x64/fsk-traffic-control.exe fsk-traffic-control-windows-x64-${{ github.ref_name }}.exe
-          mv build.fsk-traffic-control-linux-x64/fsk-traffic-control*.AppImage fsk-traffic-control-linux-x64-${{ github.ref_name }}.AppImage
+          # mv build.fsk-traffic-control-linux-x64/fsk-traffic-control*.AppImage fsk-traffic-control-linux-x64-${{ github.ref_name }}.AppImage
           mv native/src-tauri/fsk-entry.json fsk-entry.json
       - uses: ncipollo/release-action@v1
         with:
@@ -35,7 +35,7 @@ jobs:
             firmware-*.zip
             fsk-traffic-control-windows-x64-*
             fsk-traffic-control-macos-arm64-*
-            fsk-traffic-control-linux-x64-*
+            # fsk-traffic-control-linux-x64-*
             fsk-entry.json
           commit: ${{ github.sha }}
           tag: ${{ github.ref_name }}
