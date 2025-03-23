@@ -23,7 +23,7 @@
       </li>
       <li id="lap" class="nav-mode">
         <i class="fa fw fa-stopwatch"></i>
-        <span class="tooltip">랩타임 측정</span>
+        <span class="tooltip">랩 타임 측정</span>
       </li>
       <li id="settings" class="nav-mode">
         <i class="fa fw fa-rectangle-list"></i>
@@ -64,7 +64,7 @@
         <article>
           <h2><i class="fa fw fa-traffic-light"></i>신호등</h2>
           <div>
-            <table class="table-traffic-light">
+            <table class="buttons">
               <tr>
                 <td>
                   <span class="traffic-green btn green active-ready disabled">
@@ -105,7 +105,16 @@
             </div>
           </div>
           <div>
-            <span class="save btn blue"><i class="fas fw fa-floppy-disk"></i>기록 저장</span>
+            <table class="buttons" style="margin-top: 2rem;">
+              <tr>
+                <td>
+                  <span class="save disabled btn blue"><i class="fa fw fa-floppy-disk"></i>기록 저장</span>
+                </td>
+                <td>
+                  <span class="discard disabled btn orange"><i class="fa fw fa-trash"></i>기록 버리기</span>
+                </td>
+              </tr>
+            </table>
           </div>
         </article>
       </div>
@@ -161,7 +170,7 @@
         <article>
           <h2><i class="fa fw fa-traffic-light"></i>신호등</h2>
           <div>
-            <table class="table-traffic-light">
+            <table class="buttons">
               <tr>
                 <td>
                   <span class="traffic-green btn green active-ready disabled">
@@ -211,7 +220,16 @@
             </div>
           </div>
           <div>
-            <span class="save btn blue"><i class="fas fw fa-floppy-disk"></i>기록 저장</span>
+            <table class="buttons" style="margin-top: 2rem;">
+              <tr>
+                <td>
+                  <span class="save disabled btn blue"><i class="fa fw fa-floppy-disk"></i>기록 저장</span>
+                </td>
+                <td>
+                  <span class="discard disabled btn orange"><i class="fa fw fa-trash"></i>기록 버리기</span>
+                </td>
+              </tr>
+            </table>
           </div>
         </article>
       </div>
@@ -227,21 +245,21 @@
         </article>
 
         <article id="entry-lap">
-            <table class="lap-1 lap-table" style="display: none;">
-              <tr>
-                <th id="entry-1" class="entry-team">&nbsp;</th>
-              </tr>
-            </table>
-            <table class="lap-2 lap-table" style="display: none;">
-              <tr>
-                <th id="entry-2" class="entry-team">&nbsp;</th>
-              </tr>
-            </table>
+          <table class="lap-1 lap-table" style="display: none;">
+            <tr>
+              <th id="entry-1" class="entry-team">&nbsp;</th>
+            </tr>
+          </table>
+          <table class="lap-2 lap-table" style="display: none;">
+            <tr>
+              <th id="entry-2" class="entry-team">&nbsp;</th>
+            </tr>
+          </table>
         </article>
 
         <article id="time-lap">
-            <table id="lap-1" class="lap-1 lap-table" style="display: none;"></table>
-            <table id="lap-2" class="lap-2 lap-table" style="display: none;"></table>
+          <table id="lap-1" class="lap-1 lap-table" style="display: none;"></table>
+          <table id="lap-2" class="lap-2 lap-table" style="display: none;"></table>
         </article>
       </div>
     </div>

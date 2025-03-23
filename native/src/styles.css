@@ -26,7 +26,7 @@ div.container i.fw {
 
 div.container {
   display: flex;
-  width: 100%;
+  width: 96%;
   padding: 1rem;
 }
 
@@ -91,6 +91,11 @@ div.container .configuration article>div>div {
   pointer-events: none;
 }
 
+.selected {
+  background-color: #d3d3d3;
+  border-radius: 0.7rem;
+}
+
 /*******************************************************************************
 * specific DOM configurations
 *******************************************************************************/
@@ -111,12 +116,12 @@ span.controller-id i {
   margin-right: 1.5rem;
 }
 
-table.table-traffic-light {
+table.buttons {
   margin-left: -0.5rem;
   text-align: center;
 }
 
-table.table-traffic-light td {
+table.buttons td {
   padding: 0 0.5rem !important;
 }
 
@@ -218,10 +223,6 @@ input.sensor-id {
 
 .match-config div i {
   margin-right: .7rem;
-}
-
-.save {
-  margin-top: 1rem;
 }
 
 #lap-log {
