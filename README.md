@@ -2,8 +2,7 @@
 
 ## Schematics
 
-> [!NOTE]
-> TODO
+![](/.github/fsk-traffic-control.jpg)
 
 ## Development
 
