@@ -1,3 +1,0 @@
-[submodule "device/common/LoRa"]
-	path = device/common/LoRa
-	url = git@github.com:SMotlaq/LoRa.git

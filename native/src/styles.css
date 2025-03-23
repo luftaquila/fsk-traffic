@@ -8,7 +8,7 @@ body {
 
 #root-container {
   display: flex;
-  margin-left: 80px;
+  margin-left: 5rem;
 }
 
 h1 {
@@ -26,7 +26,7 @@ div.container i.fw {
 
 div.container {
   display: flex;
-  width: 100%;
+  width: 96%;
   padding: 1rem;
 }
 
@@ -37,7 +37,8 @@ div.container div.monitor {
 }
 
 div.container div.configuration {
-  width: 460px;
+  width: 26rem;
+  flex-shrink: 0;
 }
 
 div.container div.monitor {
@@ -85,13 +86,14 @@ div.container .configuration article>div>div {
   margin-bottom: 1rem;
 }
 
-div.container .configuration article>div>div:last-child {
-  margin-bottom: 0;
-}
-
 .disabled {
   opacity: 50%;
   pointer-events: none;
+}
+
+.selected {
+  background-color: #d3d3d3;
+  border-radius: 0.7rem;
 }
 
 /*******************************************************************************
@@ -107,19 +109,19 @@ span.controller-id i {
 
 .traffic {
   display: inline-block;
-  width: 60px;
-  height: 60px;
+  width: 3rem;
+  height: 3rem;
   background-color: grey;
   border-radius: 50%;
   margin-right: 1.5rem;
 }
 
-table.table-traffic-light {
+table.buttons {
   margin-left: -0.5rem;
   text-align: center;
 }
 
-table.table-traffic-light td {
+table.buttons td {
   padding: 0 0.5rem !important;
 }
 
@@ -130,7 +132,7 @@ input#cnt-lane {
 
 select.select-team,
 select#file {
-  width: 18rem;
+  width: 17rem;
   height: 1.7rem;
 }
 
@@ -152,9 +154,8 @@ input.sensor-id {
 }
 
 #record-title,
-#competitive-title,
 #lap-title {
-  font-size: 3.5rem;
+  font-size: 3rem;
   font-weight: bold;
 }
 
@@ -166,30 +167,8 @@ input.sensor-id {
 
 .clock {
   margin: 0.3rem 0 0 !important;
-  font-size: 3rem;
+  font-size: 2.7rem;
   font-weight: bold;
-}
-
-.reset {
-  margin-left: 1rem;
-}
-
-.entry-team-list {
-  margin-top: 3rem !important;
-}
-
-#competitive-team-list {
-  display: flex;
-  justify-content: center;
-}
-
-#competitive-team-list td {
-  padding: 2rem;
-}
-
-.entry-lane {
-  font-size: 3rem;
-  padding-right: 1.7rem !important;
 }
 
 .entry-team {
@@ -197,17 +176,53 @@ input.sensor-id {
   font-weight: 500;
   font-style: italic;
   font-family: "MonoplexKR";
+  word-break: keep-all;
 }
 
-.entry-team-time {
-  margin-top: 1.5rem;
-  font-size: 1.8rem;
+#time-record {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7rem;
+  padding: 0 2rem;
+  margin-top: -1rem;
+  font-size: 1.5rem;
+}
+
+#entry-lap, #time-lap {
+  display: flex;
+  padding: 0 2rem;
+  gap: 2rem;
+  margin-bottom: 0;
+}
+
+#time-lap {
+  align-items: flex-start;
+  margin-top: 0;
+}
+
+.time-table {
+  width: 15rem;
+  border-spacing: 1rem;
+}
+
+.lap-table {
+  width: 100%;
+  border-spacing: 1rem;
+}
+
+.time-table th, .lap-table th {
+  padding-bottom: .5rem;
+}
+
+.time-table td, .lap-table td {
+  font-size: 1.5rem;
   font-family: "Departure Mono";
   text-shadow: 1px 1px 2px grey;
 }
 
-.entry-team-hidden {
-  display: none;
+.match-config div i {
+  margin-right: .7rem;
 }
 
 #lap-log {
@@ -265,7 +280,7 @@ input.sensor-id {
   }
 
   50% {
-    opacity: 0;
+    opacity: 0.1;
   }
 }
 
@@ -282,8 +297,8 @@ input.sensor-id {
 }
 
 .blink {
-  animation: blink 0.5s ease-in-out 3, blink-final 0.3s ease-in 1 forwards;
-  animation-delay: 0s, 1.5s;
+  animation: blink 0.5s ease-in-out 1, blink-final 0.3s ease-in 1 forwards;
+  animation-delay: 0s, 0.5s;
 }
 
 /*******************************************************************************
@@ -299,8 +314,8 @@ input::-webkit-inner-spin-button {
 * notyf toast width
 *******************************************************************************/
 .notyf__toast {
-  min-width: 400px;
-  max-width: 600px;
+  min-width: 25rem;
+  max-width: 37.5rem;
 }
 
 /*******************************************************************************
