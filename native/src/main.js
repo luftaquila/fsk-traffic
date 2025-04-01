@@ -48,6 +48,7 @@ const selector = {
     all: document.querySelectorAll('.clock'),
     accel: document.querySelector('div#container-accel .clock'),
     gymkhana: document.querySelector('div#container-gymkhana .clock'),
+    skidpad: document.querySelector('div#container-skidpad .clock'),
   },
   team: {
     select: document.querySelectorAll('select.select-team'),
@@ -58,6 +59,11 @@ const selector = {
     start: document.getElementById('accel-start'),
     end: document.getElementById('accel-end'),
   },
+  gymkhana: {
+    1: document.getElementById('gymkhana-1'),
+    2: document.getElementById('gymkhana-2'),
+  },
+  skidpad: document.getElementById('skidpad-lap'),
   save: document.querySelectorAll('.save'),
   discard: document.querySelectorAll('.discard'),
 };
@@ -142,6 +148,12 @@ event.listen('serial-data', async event => {
           }, 7);
           break;
         }
+
+        case 'skidpad': {
+          controller.start.tick = undefined;
+          controller.start.timestamp = undefined;
+          break;
+        }
       }
 
       selector.light.forEach(el => el.style["background-color"] = "green");
@@ -194,8 +206,6 @@ event.listen('serial-data', async event => {
         return;
       }
 
-      let container = `div#container-${current}`;
-
       switch (current) {
         case 'accel': {
           if (sensor === 1) {
@@ -229,7 +239,7 @@ event.listen('serial-data', async event => {
             return;
           }
 
-          let table = document.getElementById(`gymkhana-${sensor}`);
+          let table = selector.gymkhana[sensor];
 
           if (table.style.display !== "none") {
             let tr = document.createElement('tr');
@@ -240,8 +250,25 @@ event.listen('serial-data', async event => {
           break;
         }
 
-        default:
-          return;
+        case 'skidpad': {
+          if (sensor !== 1) {
+            return;
+          }
+
+          if (!controller.start.timestamp) {
+            controller.start.tick = tick;
+            controller.start.timestamp = timestamp;
+            controller.clock = setInterval(() => {
+              selector.clock.skidpad.innerText = ms_to_clock(new Date() - controller.start.timestamp);
+            }, 7);
+          }
+
+          let tr = document.createElement('tr');
+          tr.classList.add('record');
+          tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
+          selector.skidpad.querySelector('tbody').appendChild(tr);
+          break;
+        }
       }
     }
   }
@@ -364,13 +391,14 @@ async function setup() {
                 team: entry.attributes["data-team"],
               },
               result: end - start,
+              detail: `${start - controller.green.tick} ms delayed start`,
             }, null, 2) + '\n',
           };
 
           try {
             let file = await invoke('append_file', data);
-            controller.saved = true;
 
+            controller.saved = true;
             selector.traffic.green.forEach(el => el.classList.remove('disabled'));
             selector.event.classList.remove('disabled');
             selector.navigator.classList.remove('disabled');
@@ -417,6 +445,7 @@ async function setup() {
               }
 
               rec = rec.getAttribute('data-tick');
+
               let data = {
                 name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
                 data: JSON.stringify({
@@ -429,6 +458,7 @@ async function setup() {
                     team: entry.attributes["data-team"],
                   },
                   result: rec - controller.green.tick,
+                  detail: '-',
                 }, null, 2) + '\n',
               };
 
@@ -442,6 +472,62 @@ async function setup() {
             selector.navigator.classList.remove('disabled');
             selector.team.select.forEach(el => el.classList.remove('disabled'));
             selector.team.deselect.forEach(el => el.classList.remove('disabled'));
+          } catch (e) {
+            return notyf.error(`기록을 저장하지 못했습니다.<br>${e.message}`);
+          }
+
+          break;
+        }
+
+        case 'skidpad': {
+          let entry = document.querySelector(`div#container-skidpad .entry-team`);
+          let records = selector.skidpad.querySelectorAll('.selected');
+
+          console.log(records.length)
+
+          if (!records.length) {
+            return notyf.error("저장할 기록을 선택하세요.");
+          } else if (records.length % 2) {
+            return notyf.error("저장할 기록은 항상 짝수개여야 합니다.");
+          }
+
+          let detail = '';
+          let total = 0;
+
+          for (let i = 0; i < records.length; i += 2) {
+            let start = records[i].getAttribute('data-tick');
+            let end = records[i + 1].getAttribute('data-tick');
+            total += (end - start);
+            detail += `${i ? ' / ' : ''}${i / 2 + 1}: ${end - start} ms`;
+          }
+
+          let data = {
+            name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
+            data: JSON.stringify({
+              time: new Date(),
+              type: "skidpad",
+              lane: '-',
+              entry: {
+                number: entry.attributes["data-number"],
+                univ: entry.attributes["data-univ"],
+                team: entry.attributes["data-team"],
+              },
+              result: total,
+              detail: detail,
+            }, null, 2) + '\n',
+          };
+
+          try {
+            let file = await invoke('append_file', data);
+
+            controller.saved = true;
+            selector.traffic.green.forEach(el => el.classList.remove('disabled'));
+            selector.event.classList.remove('disabled');
+            selector.navigator.classList.remove('disabled');
+            selector.team.select.forEach(el => el.classList.remove('disabled'));
+            selector.team.deselect.forEach(el => el.classList.remove('disabled'));
+
+            notyf.success(`기록을 저장했습니다. (${total} ms)<br>파일: ${file}`);
           } catch (e) {
             return notyf.error(`기록을 저장하지 못했습니다.<br>${e.message}`);
           }
@@ -493,7 +579,10 @@ async function setup() {
       if (e.target.classList.contains('selected')) {
         e.target.classList.remove('selected');
       } else {
-        [...(e.target.closest('table')).querySelectorAll('tr td.selected')].forEach(el => el.classList.remove('selected'));
+        if (current !== "skidpad") {
+          [...(e.target.closest('table')).querySelectorAll('tr td.selected')].forEach(el => el.classList.remove('selected'));
+        }
+
         e.target.classList.add('selected');
       }
     }
@@ -570,6 +659,23 @@ async function setup() {
 
             let tables = [...document.getElementsByClassName(target.closest('.gymkhana-table').classList)];
             tables.forEach(el => el.style.display = "table");
+          }
+          break;
+        }
+
+        case 'skidpad': {
+          let target = document.querySelector(`div#container-skidpad .entry-team`);
+
+          if (deselect) {
+            target.innerHTML = '‎';
+            target.attributes["data-number"] = '';
+            target.attributes["data-univ"] = '';
+            target.attributes["data-team"] = '';
+          } else {
+            target.innerHTML = `${entry.number} ${entry.univ} ${entry.team}`;
+            target.attributes["data-number"] = entry.number;
+            target.attributes["data-univ"] = entry.univ;
+            target.attributes["data-team"] = entry.team;
           }
           break;
         }
@@ -698,6 +804,7 @@ function setup_log_viewer() {
         { text: "레인", data: "lane" },
         { text: "경기", data: "type" },
         { text: "기록", data: "result" },
+        { text: "비고", data: "detail" },
       ],
     },
     perPage: 100,
@@ -752,11 +859,15 @@ function setup_log_viewer() {
 
           switch (x.type) {
             case "accel":
-              name = "가속";
+              name = "가속 측정";
               break;
 
             case "gymkhana":
               name = "짐카나";
+              break;
+
+            case "skidpad":
+              name = "스키드패드";
               break;
 
             default:
@@ -772,6 +883,7 @@ function setup_log_viewer() {
             lane: x.lane,
             type: name,
             result: `${x.result} ms`,
+            detail: x.detail,
           };
         }));
       }
