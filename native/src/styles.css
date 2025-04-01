@@ -154,7 +154,8 @@ input.sensor-id {
 }
 
 #accel-title,
-#gymkhana-title {
+#gymkhana-title,
+#skidpad-title {
   font-size: 3rem;
   font-weight: bold;
 }
@@ -199,6 +200,16 @@ input.sensor-id {
 #time-gymkhana {
   align-items: flex-start;
   margin-top: 0;
+}
+
+#time-skidpad {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7rem;
+  padding: 0 2rem;
+  margin-top: -1rem;
+  font-size: 1.5rem;
 }
 
 .time-table {
