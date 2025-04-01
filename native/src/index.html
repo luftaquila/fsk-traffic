@@ -17,13 +17,13 @@
 <body>
   <nav class="sidebar-navigation">
     <ul>
-      <li id="record" class="nav-mode active">
+      <li id="accel" class="nav-mode active">
         <i class="fa fw fa-flag-checkered"></i>
-        <span class="tooltip">기록 측정</span>
+        <span class="tooltip">가속</span>
       </li>
-      <li id="lap" class="nav-mode">
+      <li id="gymkhana" class="nav-mode">
         <i class="fa fw fa-stopwatch"></i>
-        <span class="tooltip">랩 타임 측정</span>
+        <span class="tooltip">짐카나</span>
       </li>
       <li id="settings" class="nav-mode">
         <i class="fa fw fa-rectangle-list"></i>
@@ -42,9 +42,9 @@
   </nav>
 
   <div id="root-container">
-    <div id="container-record" class="container">
+    <div id="container-accel" class="container">
       <div class="configuration">
-        <h1>🏎️ 기록 측정</h1>
+        <h1>🏎️ 가속</h1>
 
         <div class="mode-description">
           1번 센서를 출발점에, 2번 센서를 도착점에 설치합니다.<br>
@@ -120,7 +120,7 @@
       </div>
 
       <div class="monitor">
-        <h1 id="record-title">
+        <h1 id="accel-title">
           <script>document.write(new Date().getFullYear())</script> FSK
         </h1>
 
@@ -133,13 +133,13 @@
           <div class="entry-team">&nbsp;</div>
         </article>
 
-        <article id="time-record">
-          <table id="record-start" class="time-table">
+        <article id="time-accel">
+          <table id="accel-start" class="time-table">
             <tr>
               <th>출발점</th>
             </tr>
           </table>
-          <table id="record-end" class="time-table">
+          <table id="accel-end" class="time-table">
             <tr>
               <th>도착점</th>
             </tr>
@@ -148,9 +148,9 @@
       </div>
     </div>
 
-    <div id="container-lap" class="container" style="display: none;">
+    <div id="container-gymkhana" class="container" style="display: none;">
       <div class="configuration">
-        <h1>⏱️ 랩 타임 측정</h1>
+        <h1>⏱️ 짐카나</h1>
 
         <div class="mode-description">
           2개의 센서를 각 차량의 도착점에 설치합니다.<br>
@@ -235,7 +235,7 @@
       </div>
 
       <div class="monitor">
-        <h1 id="lap-title">
+        <h1 id="gymkhana-title">
           <script>document.write(new Date().getFullYear())</script> FSK
         </h1>
 
@@ -244,22 +244,22 @@
           <div class="clock">00:00:00.000</div>
         </article>
 
-        <article id="entry-lap">
-          <table class="lap-1 lap-table" style="display: none;">
+        <article id="entry-gymkhana">
+          <table class="gymkhana-1 gymkhana-table" style="display: none;">
             <tr>
               <th id="entry-1" class="entry-team">&nbsp;</th>
             </tr>
           </table>
-          <table class="lap-2 lap-table" style="display: none;">
+          <table class="gymkhana-2 gymkhana-table" style="display: none;">
             <tr>
               <th id="entry-2" class="entry-team">&nbsp;</th>
             </tr>
           </table>
         </article>
 
-        <article id="time-lap">
-          <table id="lap-1" class="lap-1 lap-table" style="display: none;"></table>
-          <table id="lap-2" class="lap-2 lap-table" style="display: none;"></table>
+        <article id="time-gymkhana">
+          <table id="gymkhana-1" class="gymkhana-1 gymkhana-table" style="display: none;"></table>
+          <table id="gymkhana-2" class="gymkhana-2 gymkhana-table" style="display: none;"></table>
         </article>
       </div>
     </div>

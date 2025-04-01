@@ -15,7 +15,7 @@ let notyf = new Notyf({
   }]
 });
 
-let current = "record";
+let current = "accel";
 
 let controller = {
   start: {
@@ -46,17 +46,17 @@ const selector = {
   },
   clock: {
     all: document.querySelectorAll('.clock'),
-    record: document.querySelector('div#container-record .clock'),
-    lap: document.querySelector('div#container-lap .clock'),
+    accel: document.querySelector('div#container-accel .clock'),
+    gymkhana: document.querySelector('div#container-gymkhana .clock'),
   },
   team: {
     select: document.querySelectorAll('select.select-team'),
     deselect: document.querySelectorAll('button.deselect-team'),
   },
   event: document.querySelector('input.event-name'),
-  record: {
-    start: document.getElementById('record-start'),
-    end: document.getElementById('record-end'),
+  accel: {
+    start: document.getElementById('accel-start'),
+    end: document.getElementById('accel-end'),
   },
   save: document.querySelectorAll('.save'),
   discard: document.querySelectorAll('.discard'),
@@ -128,17 +128,17 @@ event.listen('serial-data', async event => {
       document.querySelectorAll('tr.record').forEach(el => el.remove());
 
       switch (current) {
-        case 'record': {
+        case 'accel': {
           controller.start.tick = undefined;
           controller.start.timestamp = undefined;
           break;
         }
 
-        case 'lap': {
+        case 'gymkhana': {
           controller.start.tick = controller.green.tick;
           controller.start.timestamp = controller.green.timestamp;
           controller.clock = setInterval(() => {
-            selector.clock.lap.innerText = ms_to_clock(new Date() - controller.start.timestamp);
+            selector.clock.gymkhana.innerText = ms_to_clock(new Date() - controller.start.timestamp);
           }, 7);
           break;
         }
@@ -197,20 +197,20 @@ event.listen('serial-data', async event => {
       let container = `div#container-${current}`;
 
       switch (current) {
-        case 'record': {
+        case 'accel': {
           if (sensor === 1) {
             if (!controller.start.timestamp) {
               controller.start.tick = tick;
               controller.start.timestamp = timestamp;
               controller.clock = setInterval(() => {
-                selector.clock.record.innerText = ms_to_clock(new Date() - controller.start.timestamp);
+                selector.clock.accel.innerText = ms_to_clock(new Date() - controller.start.timestamp);
               }, 7);
             }
 
             let tr = document.createElement('tr');
             tr.classList.add('record');
             tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
-            selector.record.start.querySelector('tbody').appendChild(tr);
+            selector.accel.start.querySelector('tbody').appendChild(tr);
           } else {
             if (!controller.start.timestamp) {
               return;
@@ -219,17 +219,17 @@ event.listen('serial-data', async event => {
             let tr = document.createElement('tr');
             tr.classList.add('record');
             tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
-            selector.record.end.querySelector('tbody').appendChild(tr);
+            selector.accel.end.querySelector('tbody').appendChild(tr);
           }
           break;
         }
 
-        case 'lap': {
+        case 'gymkhana': {
           if (!controller.start.timestamp) {
             return;
           }
 
-          let table = document.getElementById(`lap-${sensor}`);
+          let table = document.getElementById(`gymkhana-${sensor}`);
 
           if (table.style.display !== "none") {
             let tr = document.createElement('tr');
@@ -336,10 +336,10 @@ async function setup() {
       controller.pending.save = false;
 
       switch (mode) {
-        case 'record': {
-          let start = document.querySelector('#record-start .selected');
-          let end = document.querySelector('#record-end .selected');
-          let entry = document.querySelector(`div#container-record .entry-team`);
+        case 'accel': {
+          let start = document.querySelector('#accel-start .selected');
+          let end = document.querySelector('#accel-end .selected');
+          let entry = document.querySelector(`div#container-accel .entry-team`);
 
           if (!start || !end) {
             return notyf.error("저장할 출발점과 도착점 기록을 선택하세요.");
@@ -356,7 +356,7 @@ async function setup() {
             name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
             data: JSON.stringify({
               time: new Date(),
-              type: "record",
+              type: "accel",
               lane: "-",
               entry: {
                 number: entry.attributes["data-number"],
@@ -385,8 +385,8 @@ async function setup() {
           break;
         }
 
-        case 'lap': {
-          let list = [document.getElementById('lap-1'), document.getElementById('lap-2')];
+        case 'gymkhana': {
+          let list = [document.getElementById('gymkhana-1'), document.getElementById('gymkhana-2')];
           list = list.filter(x => x.style.display !== "none");
 
           let flag = false;
@@ -404,7 +404,7 @@ async function setup() {
 
           try {
             for (let table of list) {
-              let lane = table.id.replace("lap-", "");
+              let lane = table.id.replace("gymkhana-", "");
               let rec = table.querySelector('.selected');
               let entry = document.getElementById(`entry-${lane}`);
 
@@ -421,7 +421,7 @@ async function setup() {
                 name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
                 data: JSON.stringify({
                   time: new Date(),
-                  type: "lap",
+                  type: "gymkhana",
                   lane: lane,
                   entry: {
                     number: entry.attributes["data-number"],
@@ -527,8 +527,8 @@ async function setup() {
       let mode = e.target.closest('div.container').id.replace("container-", "");
 
       switch (mode) {
-        case 'record': {
-          let target = document.querySelector(`div#container-record .entry-team`);
+        case 'accel': {
+          let target = document.querySelector(`div#container-accel .entry-team`);
 
           if (deselect) {
             target.innerHTML = '‎';
@@ -544,8 +544,8 @@ async function setup() {
           break;
         }
 
-        case 'lap': {
-          let teams = [...document.querySelectorAll(`div#container-lap select.select-team`)].map(el => el.value);
+        case 'gymkhana': {
+          let teams = [...document.querySelectorAll(`div#container-gymkhana select.select-team`)].map(el => el.value);
           let target = document.getElementById(`entry-${e.target.id.replace("team-lane-", "")}`);
 
           if (deselect) {
@@ -554,7 +554,7 @@ async function setup() {
             target.attributes["data-univ"] = '';
             target.attributes["data-team"] = '';
 
-            let tables = [...document.getElementsByClassName(target.closest('.lap-table').classList)];
+            let tables = [...document.getElementsByClassName(target.closest('.gymkhana-table').classList)];
             tables.forEach(el => el.style.display = "none");
           } else {
             if (teams.filter(x => x === entry.number).length > 1) {
@@ -568,7 +568,7 @@ async function setup() {
             target.attributes["data-univ"] = entry.univ;
             target.attributes["data-team"] = entry.team;
 
-            let tables = [...document.getElementsByClassName(target.closest('.lap-table').classList)];
+            let tables = [...document.getElementsByClassName(target.closest('.gymkhana-table').classList)];
             tables.forEach(el => el.style.display = "table");
           }
           break;
@@ -751,12 +751,12 @@ function setup_log_viewer() {
           let name;
 
           switch (x.type) {
-            case "record":
-              name = "기록 측정";
+            case "accel":
+              name = "가속";
               break;
 
-            case "lap":
-              name = "랩 타임 측정";
+            case "gymkhana":
+              name = "짐카나";
               break;
 
             default:
