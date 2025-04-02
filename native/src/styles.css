@@ -96,6 +96,10 @@ div.container .configuration article>div>div {
   border-radius: 0.7rem;
 }
 
+.note {
+  margin-top: 1rem;
+}
+
 /*******************************************************************************
 * specific DOM configurations
 *******************************************************************************/
@@ -153,8 +157,9 @@ input.sensor-id {
   text-align: center;
 }
 
-#record-title,
-#lap-title {
+#accel-title,
+#gymkhana-title,
+#skidpad-title {
   font-size: 3rem;
   font-weight: bold;
 }
@@ -179,7 +184,7 @@ input.sensor-id {
   word-break: keep-all;
 }
 
-#time-record {
+#time-accel {
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -189,16 +194,26 @@ input.sensor-id {
   font-size: 1.5rem;
 }
 
-#entry-lap, #time-lap {
+#entry-gymkhana, #time-gymkhana {
   display: flex;
   padding: 0 2rem;
   gap: 2rem;
   margin-bottom: 0;
 }
 
-#time-lap {
+#time-gymkhana {
   align-items: flex-start;
   margin-top: 0;
+}
+
+#time-skidpad {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7rem;
+  padding: 0 2rem;
+  margin-top: -1rem;
+  font-size: 1.5rem;
 }
 
 .time-table {
@@ -206,16 +221,16 @@ input.sensor-id {
   border-spacing: 1rem;
 }
 
-.lap-table {
+.gymkhana-table {
   width: 100%;
   border-spacing: 1rem;
 }
 
-.time-table th, .lap-table th {
+.time-table th, .gymkhana-table th {
   padding-bottom: .5rem;
 }
 
-.time-table td, .lap-table td {
+.time-table td, .gymkhana-table td {
   font-size: 1.5rem;
   font-family: "Departure Mono";
   text-shadow: 1px 1px 2px grey;
@@ -225,7 +240,7 @@ input.sensor-id {
   margin-right: .7rem;
 }
 
-#lap-log {
+#gymkhana-log {
   margin: auto;
   width: 35rem;
   max-height: 44rem;
@@ -257,12 +272,12 @@ input.sensor-id {
   padding: 0.5rem 0;
 }
 
-#record-table thead th:first-child,
+#accel-table thead th:first-child,
 #log-table thead th:first-child {
   width: 15rem!important;
 }
 
-#record-thead thead th:nth-child(1) {
+#accel-thead thead th:nth-child(1) {
   width: 8rem!important;
 }
 

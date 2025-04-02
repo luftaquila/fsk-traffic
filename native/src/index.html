@@ -17,13 +17,17 @@
 <body>
   <nav class="sidebar-navigation">
     <ul>
-      <li id="record" class="nav-mode active">
-        <i class="fa fw fa-flag-checkered"></i>
-        <span class="tooltip">기록 측정</span>
+      <li id="accel" class="nav-mode active">
+        <i class="fa fw fa-flip-horizontal fa-car-side"></i>
+        <span class="tooltip">가속 측정</span>
       </li>
-      <li id="lap" class="nav-mode">
+      <li id="gymkhana" class="nav-mode">
+        <i class="fa fw fa-flag-checkered"></i>
+        <span class="tooltip">짐카나</span>
+      </li>
+      <li id="skidpad" class="nav-mode">
         <i class="fa fw fa-stopwatch"></i>
-        <span class="tooltip">랩 타임 측정</span>
+        <span class="tooltip">스키드패드</span>
       </li>
       <li id="settings" class="nav-mode">
         <i class="fa fw fa-rectangle-list"></i>
@@ -42,11 +46,12 @@
   </nav>
 
   <div id="root-container">
-    <div id="container-record" class="container">
+    <div id="container-accel" class="container">
       <div class="configuration">
-        <h1>🏎️ 기록 측정</h1>
+        <h1>🏎️ 가속 측정</h1>
 
         <div class="mode-description">
+          모든 시작-종료 구간의 개별 기록과 총 합산 기록이 저장됩니다.
           1번 센서를 출발점에, 2번 센서를 도착점에 설치합니다.<br>
           출발점부터 도착점까지의 통과 소요 시간을 측정합니다.
         </div>
@@ -115,12 +120,15 @@
                 </td>
               </tr>
             </table>
+            <div class="note">
+              우측에서 출발점과 도착점 기록을 1개씩 선택합니다.
+            </div>
           </div>
         </article>
       </div>
 
       <div class="monitor">
-        <h1 id="record-title">
+        <h1 id="accel-title">
           <script>document.write(new Date().getFullYear())</script> FSK
         </h1>
 
@@ -133,13 +141,13 @@
           <div class="entry-team">&nbsp;</div>
         </article>
 
-        <article id="time-record">
-          <table id="record-start" class="time-table">
+        <article id="time-accel">
+          <table id="accel-start" class="time-table">
             <tr>
               <th>출발점</th>
             </tr>
           </table>
-          <table id="record-end" class="time-table">
+          <table id="accel-end" class="time-table">
             <tr>
               <th>도착점</th>
             </tr>
@@ -148,9 +156,9 @@
       </div>
     </div>
 
-    <div id="container-lap" class="container" style="display: none;">
+    <div id="container-gymkhana" class="container" style="display: none;">
       <div class="configuration">
-        <h1>⏱️ 랩 타임 측정</h1>
+        <h1>🏁 짐카나</h1>
 
         <div class="mode-description">
           2개의 센서를 각 차량의 도착점에 설치합니다.<br>
@@ -230,12 +238,16 @@
                 </td>
               </tr>
             </table>
+            <div class="note">
+              우측에서 각 차량의 도착점 기록을 1개씩 선택합니다.<br>
+              차량이 완주하지 못했다면 기록을 선택하지 않습니다.
+            </div>
           </div>
         </article>
       </div>
 
       <div class="monitor">
-        <h1 id="lap-title">
+        <h1 id="gymkhana-title">
           <script>document.write(new Date().getFullYear())</script> FSK
         </h1>
 
@@ -244,26 +256,130 @@
           <div class="clock">00:00:00.000</div>
         </article>
 
-        <article id="entry-lap">
-          <table class="lap-1 lap-table" style="display: none;">
+        <article id="entry-gymkhana">
+          <table class="gymkhana-1 gymkhana-table" style="display: none;">
             <tr>
               <th id="entry-1" class="entry-team">&nbsp;</th>
             </tr>
           </table>
-          <table class="lap-2 lap-table" style="display: none;">
+          <table class="gymkhana-2 gymkhana-table" style="display: none;">
             <tr>
               <th id="entry-2" class="entry-team">&nbsp;</th>
             </tr>
           </table>
         </article>
 
-        <article id="time-lap">
-          <table id="lap-1" class="lap-1 lap-table" style="display: none;"></table>
-          <table id="lap-2" class="lap-2 lap-table" style="display: none;"></table>
+        <article id="time-gymkhana">
+          <table id="gymkhana-1" class="gymkhana-1 gymkhana-table" style="display: none;"></table>
+          <table id="gymkhana-2" class="gymkhana-2 gymkhana-table" style="display: none;"></table>
         </article>
       </div>
     </div>
 
+    <div id="container-skidpad" class="container" style="display: none;">
+      <div class="configuration">
+        <h1>⏱️ 스키드패드</h1>
+
+        <div class="mode-description">
+          1개의 센서를 출발/도착 기준점에 설치합니다.<br>
+          녹색등 점등 시점부터 차량의 기준점 통과 랩 타임을 기록합니다.
+        </div>
+
+        <article>
+          <h2>
+            <i class="fa fw fa-cash-register"></i>컨트롤러
+            <span class="controller-id"></span>
+          </h2>
+          <div>
+            <span class="connect btn red"><i class="fab fw fa-usb"></i>컨트롤러 연결</span>
+          </div>
+        </article>
+
+        <article>
+          <h2><i class="fa fw fa-traffic-light"></i>신호등</h2>
+          <div>
+            <table class="buttons">
+              <tr>
+                <td>
+                  <span class="traffic-green btn green active-ready disabled">
+                    <i class="fa fw fa-lightbulb"></i>녹색등
+                  </span>
+                </td>
+                <td>
+                  <span class="traffic-off btn grey active-ready disabled">
+                    <i class="far fw fa-lightbulb"></i>OFF
+                  </span>
+                </td>
+                <td>
+                  <span class="traffic-red btn red active-ready disabled">
+                    <i class="fa fw fa-lightbulb"></i>적색등
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </article>
+
+        <article class="match-config">
+          <h2><i class="fa fw fa-calendar-check"></i>경기 설정</h2>
+          <div>
+            <div>
+              이벤트 이름이 같은 경기는 같은 파일에 기록됩니다.
+            </div>
+            <div>
+              <i class="fa fa-fw fa-file-signature"></i>
+              <input class='event-name' placeholder="이벤트 이름">
+            </div>
+            <div>
+              <i class="fa fa-fw fa-1"></i>
+              <select class='select-team'>
+                <option selected disabled>팀 선택</option>
+              </select>
+              <button class="deselect-team"><i class="fa fa-x"></i></button>
+            </div>
+          </div>
+          <div>
+            <table class="buttons" style="margin-top: 2rem;">
+              <tr>
+                <td>
+                  <span class="save disabled btn blue"><i class="fa fw fa-floppy-disk"></i>기록 저장</span>
+                </td>
+                <td>
+                  <span class="discard disabled btn orange"><i class="fa fw fa-trash"></i>기록 버리기</span>
+                </td>
+              </tr>
+            </table>
+            <div class="note">
+              우측에서 측정 시작 및 종료 시점을 전부 선택합니다.<br>
+              선택된 모든 구간 개별 기록과 합산 기록이 저장됩니다.
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="monitor">
+        <h1 id="skidpad-title">
+          <script>document.write(new Date().getFullYear())</script> FSK
+        </h1>
+
+        <article class="time">
+          <span class="traffic"></span>
+          <div class="clock">00:00:00.000</div>
+        </article>
+
+        <article>
+          <div class="entry-team">&nbsp;</div>
+        </article>
+
+        <article id="time-skidpad">
+          <table id="skidpad-lap" class="time-table">
+            <tr>
+              <th>랩 타임</th>
+            </tr>
+          </table>
+        </article>
+      </div>
+    </div>
 
     <div id="container-settings" class="container" style="display: none;">
       <div class="configuration" style="width: 100%;">
