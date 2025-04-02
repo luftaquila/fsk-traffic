@@ -96,6 +96,10 @@ div.container .configuration article>div>div {
   border-radius: 0.7rem;
 }
 
+.note {
+  margin-top: 1rem;
+}
+
 /*******************************************************************************
 * specific DOM configurations
 *******************************************************************************/
