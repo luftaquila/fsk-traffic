@@ -1,3 +1,6 @@
+# node db
+db-*.json
+
 # clangd
 .cache
 .clangd

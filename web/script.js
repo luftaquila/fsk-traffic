@@ -351,6 +351,8 @@ async function connect() {
  * controller serial parser
  ******************************************************************************/
 function parse(data) {
+  post('/traffic/log', { data: data });
+
   if (data.startsWith("$E")) {
     notyf.error(`컨트롤러 프로토콜 오류<br>컨트롤러 전원을 껐다 켜세요.`);
   }
