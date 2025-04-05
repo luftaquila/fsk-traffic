@@ -567,7 +567,7 @@ async function save(e) {
 
       let data = {
         name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
-        data: JSON.stringify({
+        data: {
           time: new Date(),
           type: "accel",
           lane: "-",
@@ -578,11 +578,11 @@ async function save(e) {
           },
           result: end - start,
           detail: `${start - controller.green.tick} ms delayed start`,
-        }, null, 2) + '\n',
+        }
       };
 
       try {
-        await post('/traffic', data);
+        await post('/traffic/record', data);
 
         controller.saved = true;
         selector.traffic.green.forEach(el => el.classList.remove('disabled'));
@@ -634,7 +634,7 @@ async function save(e) {
 
           let data = {
             name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
-            data: JSON.stringify({
+            data: {
               time: new Date(),
               type: "gymkhana",
               lane: lane,
@@ -645,10 +645,10 @@ async function save(e) {
               },
               result: rec - controller.green.tick,
               detail: '-',
-            }, null, 2) + '\n',
+            }
           };
 
-          await post('/traffic', data);
+          await post('/traffic/record', data);
           notyf.success(`기록을 저장했습니다. (${rec - controller.green.tick} ms)`);
         }
 
@@ -689,7 +689,7 @@ async function save(e) {
 
       let data = {
         name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
-        data: JSON.stringify({
+        data: {
           time: new Date(),
           type: "skidpad",
           lane: '-',
@@ -700,11 +700,11 @@ async function save(e) {
           },
           result: total,
           detail: detail,
-        }, null, 2) + '\n',
+        }
       };
 
       try {
-        await post('/traffic', data);
+        await post('/traffic/record', data);
 
         controller.saved = true;
         selector.traffic.green.forEach(el => el.classList.remove('disabled'));
