@@ -1,6 +1,3 @@
-const { event } = window.__TAURI__;
-const { invoke } = window.__TAURI__.tauri;
-
 let notyf = new Notyf({
   ripple: false,
   duration: 3500,
@@ -67,6 +64,8 @@ const selector = {
   save: document.querySelectorAll('.save'),
   discard: document.querySelectorAll('.discard'),
 };
+
+let entries = undefined;
 
 window.addEventListener("DOMContentLoaded", async () => {
   setup();
@@ -303,11 +302,17 @@ event.listen('serial-error', async event => {
  * UI drawers and event handlers                                                           *
  ******************************************************************************/
 async function setup() {
-  // set team select options and entry table
-  await refresh_entries();
-  selector.team.select.forEach(el => el.innerHTML = template_team_select());
-  setup_entry();
-  setup_log_viewer();
+  try {
+    // TODO: fix url
+    let res = await get('https://fsk.luftaquila.io/entry/all');
+    entries = Object.entries(res).map(([key, value]) => ({
+      num: Number(key), ...value
+    }));
+    selector.team.select.forEach(el => el.innerHTML = template_team_select());
+  } catch (e) {
+    notyf.error(`엔트리 목록을 불러오지 못했습니다.<br>${e.toString()}`);
+    document.querySelectorAll(`nav, div.container`).forEach(el => el.classList.add("disabled"));
+  }
 
   /* navigation sidebar handler ***********************************************/
   document.querySelectorAll('.nav-mode').forEach(elem => {
@@ -318,10 +323,6 @@ async function setup() {
 
       document.querySelectorAll('.container').forEach(el => el.style.display = 'none');
       document.getElementById(`container-${current}`).style.display = 'flex';
-
-      if (current === "log") {
-        update_log_viewer();
-      }
     });
   });
 
@@ -386,7 +387,7 @@ async function setup() {
               type: "accel",
               lane: "-",
               entry: {
-                number: entry.attributes["data-number"],
+                num: entry.attributes["data-num"],
                 univ: entry.attributes["data-univ"],
                 team: entry.attributes["data-team"],
               },
@@ -453,7 +454,7 @@ async function setup() {
                   type: "gymkhana",
                   lane: lane,
                   entry: {
-                    number: entry.attributes["data-number"],
+                    num: entry.attributes["data-num"],
                     univ: entry.attributes["data-univ"],
                     team: entry.attributes["data-team"],
                   },
@@ -508,7 +509,7 @@ async function setup() {
               type: "skidpad",
               lane: '-',
               entry: {
-                number: entry.attributes["data-number"],
+                num: entry.attributes["data-num"],
                 univ: entry.attributes["data-univ"],
                 team: entry.attributes["data-team"],
               },
@@ -607,7 +608,7 @@ async function setup() {
         deselect = true;
       }
 
-      let entry = entries.find(x => x.number === e.target.value);
+      let entry = entries.find(x => x.num === Number(e.target.value));
 
       if (!entry && !deselect) {
         return notyf.error("선택한 팀을 엔트리에서 찾을 수 없습니다.");
@@ -621,12 +622,12 @@ async function setup() {
 
           if (deselect) {
             target.innerHTML = '‎';
-            target.attributes["data-number"] = '';
+            target.attributes["data-num"] = '';
             target.attributes["data-univ"] = '';
             target.attributes["data-team"] = '';
           } else {
-            target.innerHTML = `${entry.number} ${entry.univ} ${entry.team}`;
-            target.attributes["data-number"] = entry.number;
+            target.innerHTML = `${entry.num} ${entry.univ} ${entry.team}`;
+            target.attributes["data-num"] = entry.num;
             target.attributes["data-univ"] = entry.univ;
             target.attributes["data-team"] = entry.team;
           }
@@ -639,21 +640,21 @@ async function setup() {
 
           if (deselect) {
             target.innerHTML = '‎';
-            target.attributes["data-number"] = '';
+            target.attributes["data-num"] = '';
             target.attributes["data-univ"] = '';
             target.attributes["data-team"] = '';
 
             let tables = [...document.getElementsByClassName(target.closest('.gymkhana-table').classList)];
             tables.forEach(el => el.style.display = "none");
           } else {
-            if (teams.filter(x => x === entry.number).length > 1) {
+            if (teams.filter(x => x === entry.num).length > 1) {
               e.target.options[0].selected = true;
               deselect = true;
               return notyf.error("이미 다른 레인에 선택된 팀입니다.");
             }
 
-            target.innerHTML = `${entry.number} ${entry.univ} ${entry.team}`;
-            target.attributes["data-number"] = entry.number;
+            target.innerHTML = `${entry.num} ${entry.univ} ${entry.team}`;
+            target.attributes["data-num"] = entry.num;
             target.attributes["data-univ"] = entry.univ;
             target.attributes["data-team"] = entry.team;
 
@@ -668,12 +669,12 @@ async function setup() {
 
           if (deselect) {
             target.innerHTML = '‎';
-            target.attributes["data-number"] = '';
+            target.attributes["data-num"] = '';
             target.attributes["data-univ"] = '';
             target.attributes["data-team"] = '';
           } else {
-            target.innerHTML = `${entry.number} ${entry.univ} ${entry.team}`;
-            target.attributes["data-number"] = entry.number;
+            target.innerHTML = `${entry.num} ${entry.univ} ${entry.team}`;
+            target.attributes["data-num"] = entry.num;
             target.attributes["data-univ"] = entry.univ;
             target.attributes["data-team"] = entry.team;
           }
@@ -713,218 +714,47 @@ async function setup() {
       invoke('serial_request', { data: `$X` });
     });
   });
-
-  /* entry list handler *******************************************************/
-  document.getElementById("entry-add").addEventListener("click", async () => {
-    let entry = document.getElementById("entry-add-number").value.trim();
-    let univ = document.getElementById("entry-add-univ").value.trim();
-    let team = document.getElementById("entry-add-team").value.trim();
-
-    if (!entry || !univ || !team) {
-      return notyf.error("추가할 엔트리 정보에 누락된 값이 있습니다.");
-    }
-
-    if (entries.find(x => Number(x.number) === Number(entry))) {
-      return notyf.error("이미 존재하는 엔트리 번호입니다.");
-    }
-
-    entry_table.rows.add([entry, univ, team, '']);
-    entry_table.columns.sort(0, "asc");
-
-    update_entry_table("엔트리가 추가되었습니다.", "엔트리를 추가하지 못했습니다.");
-
-    document.getElementById("entry-add-number").value = "";
-    document.getElementById("entry-add-univ").value = "";
-    document.getElementById("entry-add-team").value = "";
-    document.getElementById("entry-add-number").focus();
-  });
-}
-
-let log_table = undefined;
-let entry_table = undefined;
-let record_table = undefined;
-
-function setup_entry() {
-  entry_table = new simpleDatatables.DataTable("#entry-table", {
-    columns: [
-      { select: 0, sort: "asc" },
-      { select: 1 },
-      { select: 2 },
-      {
-        select: 3, sortable: false, type: "string", render: (value, td, row, cell) => {
-          return `<span class="delete-entry btn red small" onclick="delete_entry(${row})">
-            <i class="fa fw fa-delete-left" style="margin-right: 0px;"></i></span>`;
-        }
-      },
-    ],
-    data: {
-      headings: [
-        { text: "엔트리", data: "number" },
-        { text: "학교", data: "univ" },
-        { text: "팀", data: "team" },
-        { text: "삭제", data: "del" }
-      ],
-    },
-    perPage: 100,
-    perPageSelect: [10, 20, 50, 100],
-  });
-
-  simpleDatatables.makeEditable(entry_table, { contextMenu: false });
-
-  entry_table.insert(entries.map(x => { x.del = ""; return x }));
-  entry_table.on("editable.save.cell", async (newValue, oldValue, row, column) => {
-    if (newValue === oldValue) {
-      return;
-    }
-
-    update_entry_table("변경사항이 저장되었습니다.", "변경사항을 저장하지 못했습니다.");
-  });
-
-  /* prevent editor doubleclick event for the delete entry buttons ************/
-  document.getElementById("entry-table").addEventListener("dblclick", e => {
-    if (e.target.classList.contains('delete-entry') || e.target.querySelector(".delete-entry")) {
-      e.stopImmediatePropagation();
-    }
-  });
-}
-
-function setup_log_viewer() {
-  record_table = new simpleDatatables.DataTable("#record-table", {
-    columns: [
-      { select: 0, sort: "asc" },
-      { select: 1 },
-      { select: 2 },
-    ],
-    data: {
-      headings: [
-        { text: "타임스탬프", data: "date" },
-        { text: "엔트리", data: "number" },
-        { text: "학교", data: "univ" },
-        { text: "팀", data: "team" },
-        { text: "레인", data: "lane" },
-        { text: "경기", data: "type" },
-        { text: "기록", data: "result" },
-        { text: "비고", data: "detail" },
-      ],
-    },
-    perPage: 100,
-    perPageSelect: [10, 20, 50, 100],
-  });
-
-  log_table = new simpleDatatables.DataTable("#log-table", {
-    columns: [
-      { select: 0, sort: "asc", type: "date", format: "YYYY-MM-DD HH:mm:ss" },
-      { select: 1 },
-    ],
-    data: {
-      headings: [
-        { text: "타임스탬프", data: "date" },
-        { text: "데이터", data: "data" }
-      ],
-    },
-    perPage: 100,
-    perPageSelect: [10, 20, 50, 100],
-  });
-
-  document.getElementById('file').addEventListener("change", async event => {
-    record_table.data.data = [];
-    record_table.update(true);
-
-    log_table.data.data = [];
-    log_table.update(true);
-
-    document.getElementById('file-record-box').style.display = "block";
-    document.getElementById('file-log-box').style.display = "none";
-
-    if (event.target.value === "파일 선택") {
-      return;
-    }
-
-    try {
-      let data = await invoke('read_file', { name: event.target.value });
-
-      if (event.target.value === "fsk-log.json") {
-        data = JSON.parse(`[${data.toString().replace(/^}/gm, '},').slice(0, -2)}]`);
-        document.getElementById('file-record-box').style.display = "none";
-        document.getElementById('file-log-box').style.display = "block";
-        log_table.data.data = [];
-        log_table.insert(data.map(x => { return { date: date_to_string(new Date(x.date)), data: x.data } }));
-      } else {
-        data = JSON.parse(`[${data.toString().replace(/^}/gm, '},').slice(0, -2)}]`);
-        document.getElementById('file-record-box').style.display = "block";
-        document.getElementById('file-log-box').style.display = "none";
-        record_table.data.data = [];
-        record_table.insert(data.map(x => {
-          let name;
-
-          switch (x.type) {
-            case "accel":
-              name = "가속 측정";
-              break;
-
-            case "gymkhana":
-              name = "짐카나";
-              break;
-
-            case "skidpad":
-              name = "스키드패드";
-              break;
-
-            default:
-              name = "알 수 없음";
-              break;
-          }
-
-          return {
-            date: date_to_string(new Date(x.time)),
-            number: x.entry.number,
-            univ: x.entry.univ,
-            team: x.entry.team,
-            lane: x.lane,
-            type: name,
-            result: `${x.result} ms`,
-            detail: x.detail,
-          };
-        }));
-      }
-    } catch (e) {
-      notyf.error(`파일을 읽어오지 못했습니다.<br>${e}`);
-    }
-  });
-}
-
-async function update_log_viewer() {
-  try {
-    let files = await invoke('get_file_list');
-    let html = "<option selected disabled>파일 선택</option>";
-
-    for (let file of files) {
-      html += `<option value='${file}'>${file}</option>`;
-    }
-
-    let select = document.getElementById('file');
-    select.innerHTML = html;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-  } catch (e) {
-    return notyf.error(`파일 목록을 가져오지 못했습니다.<br>${e}`);
-  }
 }
 
 /*******************************************************************************
  * utility functions                                                           *
  ******************************************************************************/
-let entries = undefined;
-
-async function refresh_entries() {
+async function get(url) {
   try {
-    entries = JSON.parse(await invoke('read_file', { name: "fsk-entry.json" }));
-  } catch (e) {
-    if (e.toString().includes("os error 2")) {
-      notyf.error(`엔트리 파일을 찾을 수 없습니다.<br>${e.toString()}`);
-    } else {
-      notyf.error(`엔트리 파일이 손상되었습니다.<br>${e.toString()}`);
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      throw new Error(`failed to get: ${res.status}`);
     }
-    document.querySelectorAll(`nav, div.container`).forEach(el => el.classList.add("disabled"));
+
+    const type = res.headers.get('content-type');
+
+    if (type && type.includes('application/json')) {
+      return await res.json();
+    } else {
+      return await res.text();
+    }
+  } catch (e) {
+    notyf.error(e.message);
+  }
+}
+
+async function post(url, data) {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (!res.ok) {
+      throw new Error(`failed to post: ${await res.text()}`);
+    }
+
+    return true;
+  } catch (e) {
+    notyf.error(e.message);
+    return false;
   }
 }
 
@@ -944,33 +774,8 @@ function template_team_select(value) {
   let html = "<option selected disabled>팀 선택</option>";
 
   for (let entry of entries) {
-    html += `<option value='${entry.number}' ${entry.number == value ? "selected" : ""}>${entry.number} ${entry.univ} ${entry.team}</option>`;
+    html += `<option value='${entry.num}' ${entry.num == value ? "selected" : ""}>${entry.num} ${entry.univ} ${entry.team}</option>`;
   }
 
   return html;
-}
-
-function delete_entry(row) {
-  entry_table.rows.remove(row);
-  update_entry_table("엔트리가 삭제되었습니다.", "엔트리를 삭제하지 못했습니다.");
-}
-
-async function update_entry_table(success_msg, error_msg) {
-  let edited = entry_table.data.data.map(x => x.cells.map(y => y.text));
-  edited = edited.map(entry => { return { number: entry[0], univ: entry[1], team: entry[2] } });
-  edited = edited.sort((a, b) => Number(a.number) - Number(b.number));
-
-  try {
-    await invoke('write_entry', { data: JSON.stringify(edited, null, 2) });
-    await refresh_entries();
-
-    document.querySelectorAll('select.select-team').forEach(el => {
-      el.innerHTML = template_team_select(el.value);
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-
-    notyf.success(success_msg);
-  } catch (e) {
-    notyf.error(`${error_msg}<br>${e}`);
-  }
 }

@@ -1,9 +1,44 @@
+@font-face {
+    font-family: 'Goorm Sans';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408@1.0/goorm-sans-regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Goorm Sans';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408@1.0/goorm-sans-medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'MonoplexKR';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_Monoplex-kr@1.0/MonoplexKR-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'DepartureMono';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2409-1@1.0/DepartureMono-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
 body {
   margin: 0;
   width: 100%;
   position: absolute;
   font-family: "Goorm Sans", "MonoplexKR", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.7rem;
   user-select: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
 }
 
 #root-container {
@@ -12,11 +47,13 @@ body {
 }
 
 h1 {
+  font-weight: 500;
   margin-top: 0;
   margin-bottom: 1rem;
 }
 
 h2 {
+  font-weight: 500;
   margin-top: 0;
 }
 
@@ -37,7 +74,7 @@ div.container div.monitor {
 }
 
 div.container div.configuration {
-  width: 26rem;
+  width: 28rem;
   flex-shrink: 0;
 }
 
@@ -49,8 +86,8 @@ div.container div.monitor {
 
 div.configuration div.mode-description {
   height: 3rem;
-  line-height: 1.5rem;
-  margin-bottom: 2rem;
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
 }
 
 div.container article {
@@ -64,7 +101,7 @@ div.container article:last-child {
 
 div.container div.monitor article {
   margin-left: 0;
-  margin-top: 2rem;
+  margin-top: 3rem;
 }
 
 div.container article h2 {
@@ -79,7 +116,7 @@ div.container article table td {
 
 div.container .configuration article>div {
   margin-left: 3rem;
-  line-height: 1.5rem;
+  line-height: 1.7rem;
 }
 
 div.container .configuration article>div>div {
@@ -97,7 +134,7 @@ div.container .configuration article>div>div {
 }
 
 .note {
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-top: 1rem;
 }
 
