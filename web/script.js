@@ -13,8 +13,10 @@ let notyf = new Notyf({
 });
 
 let current = "accel";
+let entries = undefined;
 
 let controller = {
+  port: undefined,
   start: {
     tick: undefined,
     timestamp: undefined,
@@ -65,252 +67,17 @@ const selector = {
   discard: document.querySelectorAll('.discard'),
 };
 
-let entries = undefined;
-
+// init UI and event handlers
 window.addEventListener("DOMContentLoaded", async () => {
-  setup();
-});
-
-/*******************************************************************************
- * serial data handler                                                         *
- ******************************************************************************/
-event.listen('serial-data', async event => {
-  let rcv = event.payload;
-  rcv = rcv.slice(rcv.indexOf('$')).match(/\$[^$]+!/g).map(x => x.slice(0, -1));
-
-  // no protocol message found
-  if (!rcv) {
-    return;
-  }
-
-  // handle all protocol messages
-  for (let str of rcv) {
-    console.log(`${Number(new Date())} ${str}`);
-
-    await invoke('append_file', {
-      name: "fsk-log.json",
-      data: JSON.stringify({
-        date: new Date(),
-        data: str,
-      }, null, 2) + '\n'
-    });
-
-    if (str.startsWith("$E")) {
-      notyf.error(`컨트롤러 프로토콜 오류<br>컨트롤러 전원을 껐다 켜세요.`);
-    }
-
-    /*************************************************************************
-     * greetings!
-     *   request : $H
-     *   response: $HI
-     ************************************************************************/
-    else if (str.startsWith("$HI")) {
-      selector.connect.forEach(el => el.classList.add('green', 'disabled'));
-      selector.connect.forEach(el => el.classList.remove('red'));
-
-      selector.light.forEach(el => el.style["background-color"] = "grey");
-      selector.clock.all.forEach(el => el.innerText = "00:00:00.000");
-
-      selector.traffic.green.forEach(el => el.classList.remove('disabled'));
-      selector.traffic.red.forEach(el => el.classList.remove('disabled'));
-      selector.traffic.off.forEach(el => el.classList.remove('disabled'));
-
-      notyf.success(`컨트롤러 연결 완료`);
-    }
-
-    /*************************************************************************
-     * green light on
-     *   request: $G
-     *   response: $OK G <tick>
-     ************************************************************************/
-    else if (str.startsWith("$OK G")) {
-      controller.saved = false;
-      controller.green.active = true;
-      controller.green.tick = Number(str.slice(6));
-      controller.green.timestamp = new Date();
-
-      selector.clock.all.forEach(el => el.innerText = "00:00:00.000");
-      document.querySelectorAll('tr.record').forEach(el => el.remove());
-
-      switch (current) {
-        case 'accel': {
-          controller.start.tick = undefined;
-          controller.start.timestamp = undefined;
-          break;
-        }
-
-        case 'gymkhana': {
-          controller.start.tick = controller.green.tick;
-          controller.start.timestamp = controller.green.timestamp;
-          controller.clock = setInterval(() => {
-            selector.clock.gymkhana.innerText = ms_to_clock(new Date() - controller.start.timestamp);
-          }, 7);
-          break;
-        }
-
-        case 'skidpad': {
-          controller.start.tick = undefined;
-          controller.start.timestamp = undefined;
-          break;
-        }
-      }
-
-      selector.light.forEach(el => el.style["background-color"] = "green");
-
-      selector.event.classList.add('disabled');
-      selector.navigator.classList.add('disabled');
-      selector.team.select.forEach(el => el.classList.add('disabled'));
-      selector.team.deselect.forEach(el => el.classList.add('disabled'));
-      selector.traffic.green.forEach(el => el.classList.add('disabled'));
-      selector.traffic.red.forEach(el => el.classList.remove('disabled'));
-      selector.traffic.off.forEach(el => el.classList.remove('disabled'));
-      selector.save.forEach(el => el.classList.remove('disabled'));
-      selector.discard.forEach(el => el.classList.remove('disabled'));
-    }
-
-    /*************************************************************************
-     * red light on / lights off
-     *   request: $R / $X
-     *   response: $OK <R/X> <tick>
-     ************************************************************************/
-    else if (str.startsWith("$OK R") || str.startsWith("$OK X")) {
-      controller.green.active = false;
-
-      if (controller.clock) {
-        clearInterval(controller.clock);
-      }
-
-      if (str.startsWith("$OK R")) {
-        selector.light.forEach(el => el.style["background-color"] = "rgb(230, 20, 20)");
-        selector.traffic.red.forEach(el => el.classList.add('disabled'));
-        selector.traffic.off.forEach(el => el.classList.remove('disabled'));
-      } else {
-        selector.light.forEach(el => el.style["background-color"] = "grey");
-        selector.traffic.red.forEach(el => el.classList.remove('disabled'));
-        selector.traffic.off.forEach(el => el.classList.add('disabled'));
-      }
-    }
-
-    /*************************************************************************
-     * sensor report
-     *   response: $S <sensor> <tick>
-     ************************************************************************/
-    else if (str.startsWith("$S")) {
-      let timestamp = new Date();
-
-      let sensor = Number(str.slice(3, 4));
-      let tick = Number(str.slice(5));
-
-      if (!controller.green.active) {
-        return;
-      }
-
-      switch (current) {
-        case 'accel': {
-          if (sensor === 1) {
-            if (!controller.start.timestamp) {
-              controller.start.tick = tick;
-              controller.start.timestamp = timestamp;
-              controller.clock = setInterval(() => {
-                selector.clock.accel.innerText = ms_to_clock(new Date() - controller.start.timestamp);
-              }, 7);
-            }
-
-            let tr = document.createElement('tr');
-            tr.classList.add('record');
-            tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
-            selector.accel.start.querySelector('tbody').appendChild(tr);
-          } else {
-            if (!controller.start.timestamp) {
-              return;
-            }
-
-            let tr = document.createElement('tr');
-            tr.classList.add('record');
-            tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
-            selector.accel.end.querySelector('tbody').appendChild(tr);
-          }
-          break;
-        }
-
-        case 'gymkhana': {
-          if (!controller.start.timestamp) {
-            return;
-          }
-
-          let table = selector.gymkhana[sensor];
-
-          if (table.style.display !== "none") {
-            let tr = document.createElement('tr');
-            tr.classList.add('record');
-            tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
-            table.appendChild(tr);
-          }
-          break;
-        }
-
-        case 'skidpad': {
-          if (sensor !== 1) {
-            return;
-          }
-
-          if (!controller.start.timestamp) {
-            controller.start.tick = tick;
-            controller.start.timestamp = timestamp;
-            controller.clock = setInterval(() => {
-              selector.clock.skidpad.innerText = ms_to_clock(new Date() - controller.start.timestamp);
-            }, 7);
-          }
-
-          let tr = document.createElement('tr');
-          tr.classList.add('record');
-          tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
-          selector.skidpad.querySelector('tbody').appendChild(tr);
-          break;
-        }
-      }
-    }
-  }
-});
-
-/*******************************************************************************
- * serial failure handler                                                      *
- ******************************************************************************/
-event.listen('serial-error', async event => {
-  controller.green.active = false;
-
-  if (controller.clock) {
-    clearInterval(timer.clock);
-  }
-
-  selector.connect.forEach(el => el.classList.add('red'));
-  selector.connect.forEach(el => el.classList.remove('disabled', 'green'));
-
-  document.querySelectorAll('.disabled').forEach(el => el.classList.remove('disabled'));
-  selector.traffic.green.forEach(el => el.classList.add('disabled'));
-  selector.traffic.red.forEach(el => el.classList.add('disabled'));
-  selector.traffic.off.forEach(el => el.classList.add('disabled'));
-
-  selector.light.forEach(el => el.style["background-color"] = "grey");
-  selector.clock.all.forEach(el => el.innerHTML = "00:00:00.000");
-
-  notyf.error(event.payload);
-  console.error(event.payload);
-});
-
-/*******************************************************************************
- * UI drawers and event handlers                                                           *
- ******************************************************************************/
-async function setup() {
+  // load entry list
   try {
-    // TODO: fix url
-    let res = await get('https://fsk.luftaquila.io/entry/all');
+    let res = await get('/entry/all');
     entries = Object.entries(res).map(([key, value]) => ({
       num: Number(key), ...value
     }));
     selector.team.select.forEach(el => el.innerHTML = template_team_select());
   } catch (e) {
-    notyf.error(`엔트리 목록을 불러오지 못했습니다.<br>${e.toString()}`);
+    notyf.error(`엔트리 목록을 불러오지 못했습니다.<br>${e}`);
     document.querySelectorAll(`nav, div.container`).forEach(el => el.classList.add("disabled"));
   }
 
@@ -335,209 +102,10 @@ async function setup() {
   });
 
   /* controller connection handler ********************************************/
-  document.querySelectorAll(".connect").forEach(elem => {
-    elem.addEventListener("click", async () => {
-      try {
-        controller.device = await invoke('serial_connect');
-        invoke('serial_request', { data: "$HELLO" });
-      } catch (e) {
-        notyf.error(`컨트롤러 연결에 실패했습니다.<br>${e}`);
-      }
-    });
-  });
+  document.querySelectorAll(".connect").forEach(elem => elem.addEventListener("click", connect));
 
   /* record save handler ********************************************/
-  document.querySelectorAll(".save").forEach(elem => {
-    elem.addEventListener("click", async e => {
-      let mode = e.target.closest('div.container').id.replace("container-", "");
-
-      if (controller.saved && !controller.pending.save) {
-        controller.pending.save = true;
-        controller.pending.discard = false;
-
-        return notyf.open({
-          type: "warn",
-          message: "이미 이 경기의 기록을 저장했습니다.<br>무시하고 저장하려면 한 번 더 누르세요."
-        });
-      }
-
-      controller.pending.save = false;
-
-      switch (mode) {
-        case 'accel': {
-          let start = document.querySelector('#accel-start .selected');
-          let end = document.querySelector('#accel-end .selected');
-          let entry = document.querySelector(`div#container-accel .entry-team`);
-
-          if (!start || !end) {
-            return notyf.error("저장할 출발점과 도착점 기록을 선택하세요.");
-          }
-
-          start = start.getAttribute('data-tick');
-          end = end.getAttribute('data-tick');
-
-          if (start > end) {
-            return notyf.error("도착점 기록이 출발점 기록보다 빠릅니다.");
-          }
-
-          let data = {
-            name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
-            data: JSON.stringify({
-              time: new Date(),
-              type: "accel",
-              lane: "-",
-              entry: {
-                num: entry.attributes["data-num"],
-                univ: entry.attributes["data-univ"],
-                team: entry.attributes["data-team"],
-              },
-              result: end - start,
-              detail: `${start - controller.green.tick} ms delayed start`,
-            }, null, 2) + '\n',
-          };
-
-          try {
-            let file = await invoke('append_file', data);
-
-            controller.saved = true;
-            selector.traffic.green.forEach(el => el.classList.remove('disabled'));
-            selector.event.classList.remove('disabled');
-            selector.navigator.classList.remove('disabled');
-            selector.team.select.forEach(el => el.classList.remove('disabled'));
-            selector.team.deselect.forEach(el => el.classList.remove('disabled'));
-
-            notyf.success(`기록을 저장했습니다. (${end - start} ms)<br>파일: ${file}`);
-          } catch (e) {
-            return notyf.error(`기록을 저장하지 못했습니다.<br>${e.message}`);
-          }
-
-          break;
-        }
-
-        case 'gymkhana': {
-          let list = [document.getElementById('gymkhana-1'), document.getElementById('gymkhana-2')];
-          list = list.filter(x => x.style.display !== "none");
-
-          let flag = false;
-
-          for (let table of list) {
-            if (table.querySelector('.selected')) {
-              flag = true;
-              break;
-            };
-          }
-
-          if (!flag) {
-            return notyf.error("저장할 기록을 선택하세요.");
-          }
-
-          try {
-            for (let table of list) {
-              let lane = table.id.replace("gymkhana-", "");
-              let rec = table.querySelector('.selected');
-              let entry = document.getElementById(`entry-${lane}`);
-
-              if (!rec) {
-                notyf.open({
-                  type: "warn",
-                  message: `${lane}번 레인의 기록이 선택되지 않았습니다.`
-                });
-                continue;
-              }
-
-              rec = rec.getAttribute('data-tick');
-
-              let data = {
-                name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
-                data: JSON.stringify({
-                  time: new Date(),
-                  type: "gymkhana",
-                  lane: lane,
-                  entry: {
-                    num: entry.attributes["data-num"],
-                    univ: entry.attributes["data-univ"],
-                    team: entry.attributes["data-team"],
-                  },
-                  result: rec - controller.green.tick,
-                  detail: '-',
-                }, null, 2) + '\n',
-              };
-
-              let file = await invoke('append_file', data);
-              notyf.success(`기록을 저장했습니다. (${rec - controller.green.tick} ms)<br>파일: ${file}`);
-            }
-
-            controller.saved = true;
-            selector.traffic.green.forEach(el => el.classList.remove('disabled'));
-            selector.event.classList.remove('disabled');
-            selector.navigator.classList.remove('disabled');
-            selector.team.select.forEach(el => el.classList.remove('disabled'));
-            selector.team.deselect.forEach(el => el.classList.remove('disabled'));
-          } catch (e) {
-            return notyf.error(`기록을 저장하지 못했습니다.<br>${e.message}`);
-          }
-
-          break;
-        }
-
-        case 'skidpad': {
-          let entry = document.querySelector(`div#container-skidpad .entry-team`);
-          let records = selector.skidpad.querySelectorAll('.selected');
-
-          console.log(records.length)
-
-          if (!records.length) {
-            return notyf.error("저장할 기록을 선택하세요.");
-          } else if (records.length % 2) {
-            return notyf.error("저장할 기록은 항상 짝수개여야 합니다.");
-          }
-
-          let detail = '';
-          let total = 0;
-
-          for (let i = 0; i < records.length; i += 2) {
-            let start = records[i].getAttribute('data-tick');
-            let end = records[i + 1].getAttribute('data-tick');
-            total += (end - start);
-            detail += `${i ? ' / ' : ''}${i / 2 + 1}: ${end - start} ms`;
-          }
-
-          let data = {
-            name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
-            data: JSON.stringify({
-              time: new Date(),
-              type: "skidpad",
-              lane: '-',
-              entry: {
-                num: entry.attributes["data-num"],
-                univ: entry.attributes["data-univ"],
-                team: entry.attributes["data-team"],
-              },
-              result: total,
-              detail: detail,
-            }, null, 2) + '\n',
-          };
-
-          try {
-            let file = await invoke('append_file', data);
-
-            controller.saved = true;
-            selector.traffic.green.forEach(el => el.classList.remove('disabled'));
-            selector.event.classList.remove('disabled');
-            selector.navigator.classList.remove('disabled');
-            selector.team.select.forEach(el => el.classList.remove('disabled'));
-            selector.team.deselect.forEach(el => el.classList.remove('disabled'));
-
-            notyf.success(`기록을 저장했습니다. (${total} ms)<br>파일: ${file}`);
-          } catch (e) {
-            return notyf.error(`기록을 저장하지 못했습니다.<br>${e.message}`);
-          }
-
-          break;
-        }
-      }
-    });
-  });
+  document.querySelectorAll(".save").forEach(elem => elem.addEventListener("click", e => save(e)));
 
   /* record discard handler ********************************************/
   document.querySelectorAll(".discard").forEach(elem => {
@@ -563,17 +131,13 @@ async function setup() {
       selector.save.forEach(el => el.classList.add('disabled'));
       selector.discard.forEach(el => el.classList.add('disabled'));
 
-      await invoke('serial_request', { data: `$X` });
-
       selector.clock.all.forEach(el => el.innerText = "00:00:00.000");
       document.querySelectorAll('tr.record').forEach(el => el.remove());
+
+      transmit("$X");
     });
   });
 
-
-  /*******************************************************************************
-   * dynamic DOM event handler
-   ******************************************************************************/
   /* record selection handler ***********************************************/
   document.addEventListener("click", e => {
     if (e.target.closest("tr.record")) {
@@ -697,64 +261,509 @@ async function setup() {
         return notyf.error('참가팀을 선택하세요.');
       }
 
-      invoke('serial_request', { data: `$G` });
+      transmit("$G");
     });
   });
 
   /* traffic red light handler ************************************************/
   selector.traffic.red.forEach(elem => {
-    elem.addEventListener("click", () => {
-      invoke('serial_request', { data: `$R` });
-    });
+    elem.addEventListener("click", () => transmit("$R"));
   });
 
   /* traffic light off handler ************************************************/
   selector.traffic.off.forEach(elem => {
-    elem.addEventListener("click", () => {
-      invoke('serial_request', { data: `$X` });
-    });
+    elem.addEventListener("click", () => transmit("$X"));
   });
+});
+
+/*******************************************************************************
+ * controller serial communication handler
+ ******************************************************************************/
+async function connect() {
+  if (!("serial" in navigator)) {
+    return notyf.error("Web Serial API not supported.");
+  }
+
+  try {
+    controller.port = await navigator.serial.requestPort({
+      filters: [{ usbVendorId: 0x1999, usbProductId: 0x0514, }]
+    });
+
+    await controller.port.open({ baudRate: 115200 });
+    transmit("$HELLO");
+  } catch (e) {
+    notyf.error(`컨트롤러 연결에 실패했습니다.<br>${e}`);
+  }
+
+  let reader;
+  let received = "";
+
+  try {
+    reader = controller.port.readable.getReader();
+
+    while (controller.port && controller.port.readable) {
+      let { value, done } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      if (value) {
+        received += new TextDecoder().decode(value);
+
+        let idx = received.indexOf("!");
+
+        if (idx > -1) {
+          parse(received.slice(received.indexOf('$'), idx));
+          received = received.slice(idx + 1);
+        }
+      }
+    }
+  } catch (e) {
+    reader.releaseLock();
+
+    if (e.name === "NetworkError") {
+      controller.green.active = false;
+
+      if (controller.clock) {
+        clearInterval(timer.clock);
+      }
+
+      selector.connect.forEach(el => el.classList.add('red'));
+      selector.connect.forEach(el => el.classList.remove('disabled', 'green'));
+
+      document.querySelectorAll('.disabled').forEach(el => el.classList.remove('disabled'));
+      selector.traffic.green.forEach(el => el.classList.add('disabled'));
+      selector.traffic.red.forEach(el => el.classList.add('disabled'));
+      selector.traffic.off.forEach(el => el.classList.add('disabled'));
+
+      selector.light.forEach(el => el.style["background-color"] = "grey");
+      selector.clock.all.forEach(el => el.innerHTML = "00:00:00.000");
+
+      notyf.error(e.message);
+    } else {
+      notyf.error(`컨트롤러 데이터 수신에 실패했습니다.<br>${e}`);
+    }
+  }
+}
+
+/*******************************************************************************
+ * controller serial parser
+ ******************************************************************************/
+function parse(data) {
+  if (data.startsWith("$E")) {
+    notyf.error(`컨트롤러 프로토콜 오류<br>컨트롤러 전원을 껐다 켜세요.`);
+  }
+
+  /*************************************************************************
+   * greetings!
+   *   request : $H
+   *   response: $HI
+   ************************************************************************/
+  else if (data.startsWith("$HI")) {
+    selector.connect.forEach(el => el.classList.add('green', 'disabled'));
+    selector.connect.forEach(el => el.classList.remove('red'));
+
+    selector.light.forEach(el => el.style["background-color"] = "grey");
+    selector.clock.all.forEach(el => el.innerText = "00:00:00.000");
+
+    selector.traffic.green.forEach(el => el.classList.remove('disabled'));
+    selector.traffic.red.forEach(el => el.classList.remove('disabled'));
+    selector.traffic.off.forEach(el => el.classList.remove('disabled'));
+
+    notyf.success(`컨트롤러 연결 완료`);
+  }
+
+  /*************************************************************************
+   * green light on
+   *   request: $G
+   *   response: $OK G <tick>
+   ************************************************************************/
+  else if (data.startsWith("$OK G")) {
+    controller.saved = false;
+    controller.green.active = true;
+    controller.green.tick = Number(data.slice(6));
+    controller.green.timestamp = new Date();
+
+    selector.clock.all.forEach(el => el.innerText = "00:00:00.000");
+    document.querySelectorAll('tr.record').forEach(el => el.remove());
+
+    switch (current) {
+      case 'accel': {
+        controller.start.tick = undefined;
+        controller.start.timestamp = undefined;
+        break;
+      }
+
+      case 'gymkhana': {
+        controller.start.tick = controller.green.tick;
+        controller.start.timestamp = controller.green.timestamp;
+        controller.clock = setInterval(() => {
+          selector.clock.gymkhana.innerText = ms_to_clock(new Date() - controller.start.timestamp);
+        }, 7);
+        break;
+      }
+
+      case 'skidpad': {
+        controller.start.tick = undefined;
+        controller.start.timestamp = undefined;
+        break;
+      }
+    }
+
+    selector.light.forEach(el => el.style["background-color"] = "green");
+
+    selector.event.classList.add('disabled');
+    selector.navigator.classList.add('disabled');
+    selector.team.select.forEach(el => el.classList.add('disabled'));
+    selector.team.deselect.forEach(el => el.classList.add('disabled'));
+    selector.traffic.green.forEach(el => el.classList.add('disabled'));
+    selector.traffic.red.forEach(el => el.classList.remove('disabled'));
+    selector.traffic.off.forEach(el => el.classList.remove('disabled'));
+    selector.save.forEach(el => el.classList.remove('disabled'));
+    selector.discard.forEach(el => el.classList.remove('disabled'));
+  }
+
+  /*************************************************************************
+   * red light on / lights off
+   *   request: $R / $X
+   *   response: $OK <R/X> <tick>
+   ************************************************************************/
+  else if (data.startsWith("$OK R") || data.startsWith("$OK X")) {
+    controller.green.active = false;
+
+    if (controller.clock) {
+      clearInterval(controller.clock);
+    }
+
+    if (data.startsWith("$OK R")) {
+      selector.light.forEach(el => el.style["background-color"] = "rgb(230, 20, 20)");
+      selector.traffic.red.forEach(el => el.classList.add('disabled'));
+      selector.traffic.off.forEach(el => el.classList.remove('disabled'));
+    } else {
+      selector.light.forEach(el => el.style["background-color"] = "grey");
+      selector.traffic.red.forEach(el => el.classList.remove('disabled'));
+      selector.traffic.off.forEach(el => el.classList.add('disabled'));
+    }
+  }
+
+  /*************************************************************************
+   * sensor report
+   *   response: $S <sensor> <tick>
+   ************************************************************************/
+  else if (data.startsWith("$S")) {
+    let timestamp = new Date();
+
+    let sensor = Number(data.slice(3, 4));
+    let tick = Number(data.slice(5));
+
+    if (!controller.green.active) {
+      return;
+    }
+
+    switch (current) {
+      case 'accel': {
+        if (sensor === 1) {
+          if (!controller.start.timestamp) {
+            controller.start.tick = tick;
+            controller.start.timestamp = timestamp;
+            controller.clock = setInterval(() => {
+              selector.clock.accel.innerText = ms_to_clock(new Date() - controller.start.timestamp);
+            }, 7);
+          }
+
+          let tr = document.createElement('tr');
+          tr.classList.add('record');
+          tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
+          selector.accel.start.querySelector('tbody').appendChild(tr);
+        } else {
+          if (!controller.start.timestamp) {
+            return;
+          }
+
+          let tr = document.createElement('tr');
+          tr.classList.add('record');
+          tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
+          selector.accel.end.querySelector('tbody').appendChild(tr);
+        }
+        break;
+      }
+
+      case 'gymkhana': {
+        if (!controller.start.timestamp) {
+          return;
+        }
+
+        let table = selector.gymkhana[sensor];
+
+        if (table.style.display !== "none") {
+          let tr = document.createElement('tr');
+          tr.classList.add('record');
+          tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
+          table.appendChild(tr);
+        }
+        break;
+      }
+
+      case 'skidpad': {
+        if (sensor !== 1) {
+          return;
+        }
+
+        if (!controller.start.timestamp) {
+          controller.start.tick = tick;
+          controller.start.timestamp = timestamp;
+          controller.clock = setInterval(() => {
+            selector.clock.skidpad.innerText = ms_to_clock(new Date() - controller.start.timestamp);
+          }, 7);
+        }
+
+        let tr = document.createElement('tr');
+        tr.classList.add('record');
+        tr.innerHTML = `<td class='blink' data-tick="${tick}">+${ms_to_clock(tick - controller.start.tick)}</td>`;
+        selector.skidpad.querySelector('tbody').appendChild(tr);
+        break;
+      }
+    }
+  }
+}
+
+/*******************************************************************************
+ * record save handler
+ ******************************************************************************/
+async function save(e) {
+  let mode = e.target.closest('div.container').id.replace("container-", "");
+
+  if (controller.saved && !controller.pending.save) {
+    controller.pending.save = true;
+    controller.pending.discard = false;
+
+    return notyf.open({
+      type: "warn",
+      message: "이미 이 경기의 기록을 저장했습니다.<br>무시하고 저장하려면 한 번 더 누르세요."
+    });
+  }
+
+  controller.pending.save = false;
+
+  switch (mode) {
+    case 'accel': {
+      let start = document.querySelector('#accel-start .selected');
+      let end = document.querySelector('#accel-end .selected');
+      let entry = document.querySelector(`div#container-accel .entry-team`);
+
+      if (!start || !end) {
+        return notyf.error("저장할 출발점과 도착점 기록을 선택하세요.");
+      }
+
+      start = start.getAttribute('data-tick');
+      end = end.getAttribute('data-tick');
+
+      if (start > end) {
+        return notyf.error("도착점 기록이 출발점 기록보다 빠릅니다.");
+      }
+
+      let data = {
+        name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
+        data: JSON.stringify({
+          time: new Date(),
+          type: "accel",
+          lane: "-",
+          entry: {
+            num: entry.attributes["data-num"],
+            univ: entry.attributes["data-univ"],
+            team: entry.attributes["data-team"],
+          },
+          result: end - start,
+          detail: `${start - controller.green.tick} ms delayed start`,
+        }, null, 2) + '\n',
+      };
+
+      try {
+        await post('/traffic', data);
+
+        controller.saved = true;
+        selector.traffic.green.forEach(el => el.classList.remove('disabled'));
+        selector.event.classList.remove('disabled');
+        selector.navigator.classList.remove('disabled');
+        selector.team.select.forEach(el => el.classList.remove('disabled'));
+        selector.team.deselect.forEach(el => el.classList.remove('disabled'));
+
+        notyf.success(`기록을 저장했습니다. (${end - start} ms)`);
+      } catch (e) {
+        return notyf.error(`기록을 저장하지 못했습니다.<br>${e.message}`);
+      }
+
+      break;
+    }
+
+    case 'gymkhana': {
+      let list = [document.getElementById('gymkhana-1'), document.getElementById('gymkhana-2')];
+      list = list.filter(x => x.style.display !== "none");
+
+      let flag = false;
+
+      for (let table of list) {
+        if (table.querySelector('.selected')) {
+          flag = true;
+          break;
+        };
+      }
+
+      if (!flag) {
+        return notyf.error("저장할 기록을 선택하세요.");
+      }
+
+      try {
+        for (let table of list) {
+          let lane = table.id.replace("gymkhana-", "");
+          let rec = table.querySelector('.selected');
+          let entry = document.getElementById(`entry-${lane}`);
+
+          if (!rec) {
+            notyf.open({
+              type: "warn",
+              message: `${lane}번 레인의 기록이 선택되지 않았습니다.`
+            });
+            continue;
+          }
+
+          rec = rec.getAttribute('data-tick');
+
+          let data = {
+            name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
+            data: JSON.stringify({
+              time: new Date(),
+              type: "gymkhana",
+              lane: lane,
+              entry: {
+                num: entry.attributes["data-num"],
+                univ: entry.attributes["data-univ"],
+                team: entry.attributes["data-team"],
+              },
+              result: rec - controller.green.tick,
+              detail: '-',
+            }, null, 2) + '\n',
+          };
+
+          await post('/traffic', data);
+          notyf.success(`기록을 저장했습니다. (${rec - controller.green.tick} ms)`);
+        }
+
+        controller.saved = true;
+        selector.traffic.green.forEach(el => el.classList.remove('disabled'));
+        selector.event.classList.remove('disabled');
+        selector.navigator.classList.remove('disabled');
+        selector.team.select.forEach(el => el.classList.remove('disabled'));
+        selector.team.deselect.forEach(el => el.classList.remove('disabled'));
+      } catch (e) {
+        return notyf.error(`기록을 저장하지 못했습니다.<br>${e.message}`);
+      }
+
+      break;
+    }
+
+    case 'skidpad': {
+      let entry = document.querySelector(`div#container-skidpad .entry-team`);
+      let records = selector.skidpad.querySelectorAll('.selected');
+
+      console.log(records.length)
+
+      if (!records.length) {
+        return notyf.error("저장할 기록을 선택하세요.");
+      } else if (records.length % 2) {
+        return notyf.error("저장할 기록은 항상 짝수개여야 합니다.");
+      }
+
+      let detail = '';
+      let total = 0;
+
+      for (let i = 0; i < records.length; i += 2) {
+        let start = records[i].getAttribute('data-tick');
+        let end = records[i + 1].getAttribute('data-tick');
+        total += (end - start);
+        detail += `${i ? ' / ' : ''}${i / 2 + 1}: ${end - start} ms`;
+      }
+
+      let data = {
+        name: document.querySelector(`div#container-${mode} .event-name`).value.trim(),
+        data: JSON.stringify({
+          time: new Date(),
+          type: "skidpad",
+          lane: '-',
+          entry: {
+            num: entry.attributes["data-num"],
+            univ: entry.attributes["data-univ"],
+            team: entry.attributes["data-team"],
+          },
+          result: total,
+          detail: detail,
+        }, null, 2) + '\n',
+      };
+
+      try {
+        await post('/traffic', data);
+
+        controller.saved = true;
+        selector.traffic.green.forEach(el => el.classList.remove('disabled'));
+        selector.event.classList.remove('disabled');
+        selector.navigator.classList.remove('disabled');
+        selector.team.select.forEach(el => el.classList.remove('disabled'));
+        selector.team.deselect.forEach(el => el.classList.remove('disabled'));
+
+        notyf.success(`기록을 저장했습니다. (${total} ms)`);
+      } catch (e) {
+        return notyf.error(`기록을 저장하지 못했습니다.<br>${e.message}`);
+      }
+
+      break;
+    }
+  }
 }
 
 /*******************************************************************************
  * utility functions                                                           *
  ******************************************************************************/
 async function get(url) {
-  try {
-    const res = await fetch(url);
+  const res = await fetch(url);
 
-    if (!res.ok) {
-      throw new Error(`failed to get: ${res.status}`);
-    }
+  if (!res.ok) {
+    throw new Error(`failed to get: ${res.status}`);
+  }
 
-    const type = res.headers.get('content-type');
+  const type = res.headers.get('content-type');
 
-    if (type && type.includes('application/json')) {
-      return await res.json();
-    } else {
-      return await res.text();
-    }
-  } catch (e) {
-    notyf.error(e.message);
+  if (type && type.includes('application/json')) {
+    return await res.json();
+  } else {
+    return await res.text();
   }
 }
 
 async function post(url, data) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  if (!res.ok) {
+    throw new Error(`failed to post: ${await res.text()}`);
+  }
+}
+
+async function transmit(data) {
+  let writer;
+
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-
-    if (!res.ok) {
-      throw new Error(`failed to post: ${await res.text()}`);
-    }
-
+    writer = controller.port.writable.getWriter();
+    await writer.write(new TextEncoder().encode(data));
     return true;
   } catch (e) {
-    notyf.error(e.message);
+    notyf.error(`Failed to transmit: ${e}`);
     return false;
+  } finally {
+    writer.releaseLock();
   }
 }
 
