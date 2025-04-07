@@ -13,6 +13,12 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(pwd, 'web')));
 app.use(express.urlencoded({ extended: true }));
+app.use((req, res, next) => {
+  if (req.headers.authorization) {
+    req.headers.authuser = Buffer.from(req.headers.authorization.split(' ')[1], 'base64').toString('utf-8').split(':')[0];
+  }
+  next();
+});
 app.use(pinoHttp({ stream: fs.createWriteStream('./app.log', { flags: 'a' }) }));
 
 app.listen(6000);
