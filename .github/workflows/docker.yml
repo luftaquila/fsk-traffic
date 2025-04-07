@@ -1,0 +1,54 @@
+name: Build Docker images
+
+on:
+  push:
+    tags-ignore:
+      - v*
+
+jobs:
+  build-amd64:
+    name: Build amd64 image
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Build the Docker image
+      run: docker build --tag ${{ github.repository }}:${{ github.ref_name }}-amd64 --push .
+
+  build-arm64:
+    name: Build arm64 image
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Build the Docker image
+      run: docker build --tag ${{ github.repository }}:${{ github.ref_name }}-arm64 --push .
+
+  manifest:
+    name: Set image manifests
+    runs-on: ubuntu-latest
+    needs: [build-amd64, build-arm64]
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Set manifest and push
+        run: |
+          docker manifest create ${{ github.repository }}:${{ github.ref_name }} ${{ github.repository }}:${{ github.ref_name }}-amd64 ${{ github.repository }}:${{ github.ref_name }}-arm64
+          docker manifest annotate ${{ github.repository }}:${{ github.ref_name }} ${{ github.repository }}:${{ github.ref_name }}-amd64 --os linux --arch amd64
+          docker manifest annotate ${{ github.repository }}:${{ github.ref_name }} ${{ github.repository }}:${{ github.ref_name }}-arm64 --os linux --arch arm64
+          docker manifest push ${{ github.repository }}:${{ github.ref_name }}
