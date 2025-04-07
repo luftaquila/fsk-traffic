@@ -83,6 +83,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   /* navigation sidebar handler ***********************************************/
   document.querySelectorAll('.nav-mode').forEach(elem => {
+    if (elem.hasAttribute('onclick')) {
+      return;
+    }
+
     elem.addEventListener("click", () => {
       document.querySelectorAll('.nav-mode').forEach(el => el.classList.remove('active'));
       elem.classList.add('active');

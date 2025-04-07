@@ -366,8 +366,8 @@ input::-webkit-inner-spin-button {
 * notyf toast width
 *******************************************************************************/
 .notyf__toast {
-  min-width: 25rem;
-  max-width: 37.5rem;
+  min-width: 25rem!important;
+  max-width: 40rem!important;
 }
 
 /*******************************************************************************
