@@ -21,7 +21,7 @@ app.use((req, res, next) => {
 });
 app.use(pinoHttp({ stream: fs.createWriteStream('./app.log', { flags: 'a' }) }));
 
-app.listen(6000);
+app.listen(7000);
 
 // return record list
 app.get('/record/list', async (req, res) => {
