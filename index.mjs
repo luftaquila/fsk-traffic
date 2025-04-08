@@ -1,17 +1,24 @@
 import fs from 'fs';
-import path from 'path';
 import express from 'express'
 import pinoHttp from 'pino-http';
-import { JSONFilePreset } from 'lowdb/node';
+import Database from 'better-sqlite3';
 
-const pwd = path.resolve();
-const db = {
-  log: await JSONFilePreset(path.join(pwd, 'db-log.json'), []),
-};
+// init db
+const db = new Database('./data/traffic.db');
+
+db.exec(`CREATE TABLE IF NOT EXISTS controller (
+  timestamp TEXT NOT NULL,
+  data TEXT NOT NULL
+);`);
+
+process.on('exit', () => db.close());
+process.on('SIGHUP', () => process.exit(128 + 1));
+process.on('SIGINT', () => process.exit(128 + 2));
+process.on('SIGTERM', () => process.exit(128 + 15));
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(pwd, 'web')));
+app.use(express.static('./web'));
 app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   if (req.headers.authorization) {
@@ -19,63 +26,81 @@ app.use((req, res, next) => {
   }
   next();
 });
-app.use(pinoHttp({ stream: fs.createWriteStream('./app.log', { flags: 'a' }) }));
+app.use(pinoHttp({ stream: fs.createWriteStream('./data/traffic.log', { flags: 'a' }) }));
 
 app.listen(7000);
 
 // return record list
 app.get('/record/list', async (req, res) => {
-  let records = await fs.promises.readdir(pwd);
-  records = records
-    .filter((file) => file.startsWith('db-') && file.endsWith('.json'))
-    .map((file) => file.replace('db-', '').replace('.json', ''));
-  res.json(records);
+  try {
+    const statement = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
+    const tables = statement.all();
+    res.json(tables.map(table => table.name));
+  } catch (e) {
+    return res.status(500).send(`DB 오류: ${e}`);
+  }
 });
 
 // return specific record
 app.get('/record', async (req, res) => {
-  let name = req.query.name.trim();
+  const name = req.query.name.trim();
 
-  if (!db[name]) {
-    db[name] = await JSONFilePreset(path.join(pwd, `db-${name}.json`), []);
+  try {
+    let statement = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`);
+    const table = statement.get(name);
+
+    if (!table) {
+      return res.status(400).send('존재하지 않는 기록입니다.');
+    }
+
+    statement = db.prepare(`SELECT * FROM '${name}'`);
+    const records = statement.all();
+    res.json(records);
+  } catch (e) {
+    return res.status(500).send(`DB 오류: ${e}`);
   }
-
-  await db[name].read();
-  res.json(db[name].data);
 });
 
 // add record
 app.post('/record', async (req, res) => {
-  let name = `FSK ${new Date().getFullYear()} ${req.body.name}`;
+  const name = `FSK ${new Date().getFullYear()} ${req.body.name.trim()}`;
 
-  if (!db[name]) {
-    db[name] = await JSONFilePreset(path.join(pwd, `db-${name}.json`), []);
+  try {
+    let statement = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`);
+    const table = statement.get(name);
+
+    if (!table) {
+      db.exec(`CREATE TABLE IF NOT EXISTS '${name}' (
+        time TEXT NOT NULL,
+        num INTEGER NOT NULL,
+        univ TEXT NOT NULL,
+        team TEXT NOT NULL,
+        lane INTEGER,
+        type TEXT NOT NULL,
+        result INTEGER NOT NULL,
+        detail TEXT
+      );`);
+    }
+
+    const data = req.body.data;
+
+    statement = db.prepare(`INSERT INTO '${name}' (time, num, univ, team, lane, type, result, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    statement.run(data.time, data.entry.num, data.entry.univ, data.entry.team, data.lane, data.type, data.result, data.detail);
+
+    res.status(201).send();
+  } catch (e) {
+    return res.status(500).send(`DB 오류: ${e}`);
   }
-
-  await db[name].read();
-  db[name].data.push(req.body.data);
-  await db[name].write();
-  res.status(201).send();
-});
-
-// return controller log
-app.get('/log', async (req, res) => {
-  await db.log.read();
-  res.json(db.log.data);
 });
 
 // add controller log
-app.post('/log', async (req, res) => {
-  req.body.timestamp = new Date();
-  await db.log.read();
-  db.log.data.push(req.body);
-  await db.log.write();
-  res.status(201).send();
-});
+app.post('/controller', async (req, res) => {
+  try {
+    const statement = db.prepare('INSERT INTO controller (timestamp, data) VALUES (?, ?)');
+    statement.run(req.body.timestamp, req.body.data);
 
-// delete controller log
-app.delete('/log', async (req, res) => {
-  db.log.data = [];
-  await db.log.write();
-  res.status(200).send();
+    res.status(201).send();
+  } catch (e) {
+    return res.status(500).send(`DB 오류: ${e}`);
+  }
 });
