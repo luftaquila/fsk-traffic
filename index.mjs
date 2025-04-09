@@ -42,16 +42,8 @@ app.get('/record/list', (req, res) => {
 
 // return specific record
 app.get('/record', (req, res) => {
-  const name = req.query.name.trim();
-
   try {
-    const table = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`).get(name);
-
-    if (!table) {
-      return res.status(400).send('존재하지 않는 기록입니다.');
-    }
-
-    res.json(db.prepare(`SELECT * FROM '${name}'`).all());
+    res.json(db.prepare(`SELECT * FROM '${req.query.name.trim()}'`).all());
   } catch (e) {
     return res.status(500).send(`DB 오류: ${e}`);
   }
@@ -62,25 +54,27 @@ app.post('/record', (req, res) => {
   const name = `FSK ${new Date().getFullYear()} ${req.body.name.trim()}`;
 
   try {
-    const table = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`).get(name);
+    db.transaction(() => {
+      const table = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`).get(name);
 
-    if (!table) {
-      db.exec(`CREATE TABLE IF NOT EXISTS '${name}' (
-        time TEXT NOT NULL,
-        num INTEGER NOT NULL,
-        univ TEXT NOT NULL,
-        team TEXT NOT NULL,
-        lane INTEGER,
-        type TEXT NOT NULL,
-        result INTEGER NOT NULL,
-        detail TEXT
-      );`);
-    }
+      if (!table) {
+        db.exec(`CREATE TABLE IF NOT EXISTS '${name}' (
+          time TEXT NOT NULL,
+          num INTEGER NOT NULL,
+          univ TEXT NOT NULL,
+          team TEXT NOT NULL,
+          lane INTEGER,
+          type TEXT NOT NULL,
+          result INTEGER NOT NULL,
+          detail TEXT
+        );`);
+      }
 
-    const data = req.body.data;
+      const data = req.body.data;
 
-    db.prepare(`INSERT INTO '${name}' (time, num, univ, team, lane, type, result, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(data.time, data.entry.num, data.entry.univ, data.entry.team, data.lane, data.type, data.result, data.detail);
+      db.prepare(`INSERT INTO '${name}' (time, num, univ, team, lane, type, result, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(data.time, data.entry.num, data.entry.univ, data.entry.team, data.lane, data.type, data.result, data.detail);
+    })();
 
     res.status(201).send();
   } catch (e) {
