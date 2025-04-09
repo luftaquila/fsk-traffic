@@ -31,10 +31,9 @@ app.use(pinoHttp({ stream: fs.createWriteStream('./data/traffic.log', { flags: '
 app.listen(7000);
 
 // return record list
-app.get('/record/list', async (req, res) => {
+app.get('/record/list', (req, res) => {
   try {
-    const statement = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
-    const tables = statement.all();
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
     res.json(tables.map(table => table.name));
   } catch (e) {
     return res.status(500).send(`DB 오류: ${e}`);
@@ -42,32 +41,28 @@ app.get('/record/list', async (req, res) => {
 });
 
 // return specific record
-app.get('/record', async (req, res) => {
+app.get('/record', (req, res) => {
   const name = req.query.name.trim();
 
   try {
-    let statement = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`);
-    const table = statement.get(name);
+    const table = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`).get(name);
 
     if (!table) {
       return res.status(400).send('존재하지 않는 기록입니다.');
     }
 
-    statement = db.prepare(`SELECT * FROM '${name}'`);
-    const records = statement.all();
-    res.json(records);
+    res.json(db.prepare(`SELECT * FROM '${name}'`).all());
   } catch (e) {
     return res.status(500).send(`DB 오류: ${e}`);
   }
 });
 
 // add record
-app.post('/record', async (req, res) => {
+app.post('/record', (req, res) => {
   const name = `FSK ${new Date().getFullYear()} ${req.body.name.trim()}`;
 
   try {
-    let statement = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`);
-    const table = statement.get(name);
+    const table = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name = ?`).get(name);
 
     if (!table) {
       db.exec(`CREATE TABLE IF NOT EXISTS '${name}' (
@@ -84,8 +79,8 @@ app.post('/record', async (req, res) => {
 
     const data = req.body.data;
 
-    statement = db.prepare(`INSERT INTO '${name}' (time, num, univ, team, lane, type, result, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-    statement.run(data.time, data.entry.num, data.entry.univ, data.entry.team, data.lane, data.type, data.result, data.detail);
+    db.prepare(`INSERT INTO '${name}' (time, num, univ, team, lane, type, result, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(data.time, data.entry.num, data.entry.univ, data.entry.team, data.lane, data.type, data.result, data.detail);
 
     res.status(201).send();
   } catch (e) {
@@ -94,11 +89,9 @@ app.post('/record', async (req, res) => {
 });
 
 // add controller log
-app.post('/controller', async (req, res) => {
+app.post('/controller', (req, res) => {
   try {
-    const statement = db.prepare('INSERT INTO controller (timestamp, data) VALUES (?, ?)');
-    statement.run(req.body.timestamp, req.body.data);
-
+    db.prepare('INSERT INTO controller (timestamp, data) VALUES (?, ?)').run(req.body.timestamp, req.body.data);
     res.status(201).send();
   } catch (e) {
     return res.status(500).send(`DB 오류: ${e}`);
