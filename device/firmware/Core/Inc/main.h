@@ -57,18 +57,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define SENS1_Pin GPIO_PIN_0
+#define SENS1_GPIO_Port GPIOA
+#define SENS1_EXTI_IRQn EXTI0_1_IRQn
+#define SENS2_Pin GPIO_PIN_1
+#define SENS2_GPIO_Port GPIOA
+#define SENS2_EXTI_IRQn EXTI0_1_IRQn
+#define GREEN_Pin GPIO_PIN_2
+#define GREEN_GPIO_Port GPIOA
+#define RED_Pin GPIO_PIN_3
+#define RED_GPIO_Port GPIOA
 #define LED_Pin GPIO_PIN_4
 #define LED_GPIO_Port GPIOA
-#define SENS1_Pin GPIO_PIN_5
-#define SENS1_GPIO_Port GPIOA
-#define SENS1_EXTI_IRQn EXTI4_15_IRQn
-#define SENS2_Pin GPIO_PIN_6
-#define SENS2_GPIO_Port GPIOA
-#define SENS2_EXTI_IRQn EXTI4_15_IRQn
-#define GREEN_Pin GPIO_PIN_7
-#define GREEN_GPIO_Port GPIOA
-#define RED_Pin GPIO_PIN_1
-#define RED_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
