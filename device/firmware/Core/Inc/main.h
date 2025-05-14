@@ -71,7 +71,49 @@ void Error_Handler(void);
 #define LED_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
+#define true  (1)
+#define false (0)
 
+/*******************************************************************************
+ * USB CDC command from the host system
+ ******************************************************************************/
+typedef enum {
+  CMD_HELLO, // greetings
+  CMD_GREEN, // green on, red off
+  CMD_RED,   // green off, red on
+  CMD_OFF,   // both off
+  CMD_RESET, // reset controller
+} usb_cmd_type_t;
+
+#define USB_Command(CMD) \
+  (strncmp((const char *)UserRxBufferFS, usb_cmd[CMD], 2) == 0)
+
+#define USB_Transmit(buf)                                                      \
+  {                                                                            \
+    volatile uint8_t usb_ret;                                                  \
+    do {                                                                       \
+      usb_ret = CDC_Transmit_FS((uint8_t *)buf, strlen((const char *)buf));    \
+    } while (usb_ret == USBD_BUSY);                                            \
+  }
+
+
+/*******************************************************************************
+ * traffic light control
+ ******************************************************************************/
+#define RED(POWER) \
+  HAL_GPIO_WritePin(RED_GPIO_Port, RED_Pin, POWER ? GPIO_PIN_SET : GPIO_PIN_RESET);
+#define GREEN(POWER) \
+  HAL_GPIO_WritePin(GREEN_GPIO_Port, GREEN_Pin, POWER ? GPIO_PIN_SET : GPIO_PIN_RESET);
+
+
+/*******************************************************************************
+ * printf
+ ******************************************************************************/
+#ifdef DEBUG
+#define DEBUG_MSG(...) printf(__VA_ARGS__)
+#else /* DEBUG */
+#define DEBUG_MSG(...)
+#endif /* DEBUG */
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

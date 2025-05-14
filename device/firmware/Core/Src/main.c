@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usbd_cdc_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,7 +44,21 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+/* USB buffer and flag */
+volatile uint32_t usb_rcv_flag = false;
+extern uint8_t UserRxBufferFS[];
+extern uint8_t UserTxBufferFS[];
 
+volatile uint32_t sensor_flag = false;
+uint32_t sensor_tick[2];
+
+const char usb_cmd[][3] = {
+  "$H", // HELLO
+  "$G", // GREEN
+  "$R", // RED
+  "$X", // OFF
+  "$R", // RESET
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -55,7 +69,26 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+  uint32_t tick = HAL_GetTick();
 
+  switch (GPIO_Pin) {
+    case SENS1_Pin:
+      if (tick - sensor_tick[0] > 200) {
+        sensor_flag |= 1 << 0;
+        sensor_tick[0] = tick;
+      }
+      break;
+    case SENS2_Pin:
+      if (tick - sensor_tick[1] > 200) {
+        sensor_flag |= 1 << 1;
+        sensor_tick[1] = HAL_GetTick();
+      }
+      break;
+    default:
+      break;
+  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -89,13 +122,60 @@ int main(void)
   MX_GPIO_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
+  // flash traffic light 3 times
+  for (int i = 0; i < 6; i++) {
+    // on at even, off at odd
+    RED(!(i & 0b01));
+    GREEN(!(i & 0b01));
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    HAL_Delay(200);
+  }
 
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  while (true) {
+    if (sensor_flag) {
+      if (sensor_flag & (1 << 0)) {
+        sprintf((char *)UserTxBufferFS, "$S 1 %lu!\n", sensor_tick[0]);
+        USB_Transmit(UserTxBufferFS);
+        sensor_flag &= ~(1 << 0);
+      }
+
+      if (sensor_flag & (1 << 1)) {
+        sprintf((char *)UserTxBufferFS, "$S 2 %lu!\n", sensor_tick[1]);
+        USB_Transmit(UserTxBufferFS);
+        sensor_flag &= ~(1 << 1);
+      }
+    }
+
+    if (usb_rcv_flag) {
+      if (USB_Command(CMD_GREEN)) {
+        GREEN(true);
+        RED(false);
+        sprintf((char *)UserTxBufferFS, "$OK G %lu!\n", HAL_GetTick());
+        USB_Transmit(UserTxBufferFS);
+      } else if (USB_Command(CMD_RED)) {
+        GREEN(false);
+        RED(true);
+        USB_Transmit("$OK R!\n");
+      } else if (USB_Command(CMD_OFF)) {
+        GREEN(false);
+        RED(false);
+        USB_Transmit("$OK X!\n");
+      } else if (USB_Command(CMD_RESET)) {
+        HAL_NVIC_SystemReset();
+      } else if (USB_Command(CMD_HELLO)) {
+        USB_Transmit("$HI!\n");
+      } else {
+        USB_Transmit("$E!\n");
+      }
+
+      usb_rcv_flag = false;
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -159,10 +239,11 @@ void SystemClock_Config(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
+  DEBUG_MSG("\nERROR!\n");
+
+  while (1) {
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    HAL_Delay(100);
   }
   /* USER CODE END Error_Handler_Debug */
 }
