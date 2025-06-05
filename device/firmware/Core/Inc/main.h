@@ -63,10 +63,10 @@ void Error_Handler(void);
 #define SENS2_Pin GPIO_PIN_1
 #define SENS2_GPIO_Port GPIOA
 #define SENS2_EXTI_IRQn EXTI0_1_IRQn
-#define GREEN_Pin GPIO_PIN_2
-#define GREEN_GPIO_Port GPIOA
-#define RED_Pin GPIO_PIN_3
+#define RED_Pin GPIO_PIN_2
 #define RED_GPIO_Port GPIOA
+#define GREEN_Pin GPIO_PIN_3
+#define GREEN_GPIO_Port GPIOA
 #define LED_Pin GPIO_PIN_4
 #define LED_GPIO_Port GPIOA
 
