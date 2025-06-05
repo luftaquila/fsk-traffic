@@ -1,8 +1,10 @@
 # Formula Student Korea Traffic Controller
 
-## Schematics
+![](/.github/console.png)
 
-![](/.github/fsk-traffic-control.jpg)
+![](/.github/pcb.png)
+
+![](/.github/schematic.png)
 
 ## Development
 
