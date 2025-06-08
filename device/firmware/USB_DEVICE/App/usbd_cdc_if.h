@@ -2,12 +2,12 @@
 /**
   ******************************************************************************
   * @file           : usbd_cdc_if.h
-  * @version        : v1.0_Cube
+  * @version        : v2.0_Cube
   * @brief          : Header for usbd_cdc_if.c file.
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2025 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file

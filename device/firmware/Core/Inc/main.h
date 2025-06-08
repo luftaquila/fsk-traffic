@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2025 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -27,11 +27,11 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx_hal.h"
+#include "stm32f0xx_hal.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdint.h>
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -57,18 +57,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define LED_Pin GPIO_PIN_13
-#define LED_GPIO_Port GPIOC
-#define SENS2_Pin GPIO_PIN_12
-#define SENS2_GPIO_Port GPIOB
-#define SENS2_EXTI_IRQn EXTI15_10_IRQn
-#define SENS1_Pin GPIO_PIN_13
-#define SENS1_GPIO_Port GPIOB
-#define SENS1_EXTI_IRQn EXTI15_10_IRQn
-#define GREEN_Pin GPIO_PIN_8
-#define GREEN_GPIO_Port GPIOB
-#define RED_Pin GPIO_PIN_9
-#define RED_GPIO_Port GPIOB
+#define SENS1_Pin GPIO_PIN_0
+#define SENS1_GPIO_Port GPIOA
+#define SENS1_EXTI_IRQn EXTI0_1_IRQn
+#define SENS2_Pin GPIO_PIN_1
+#define SENS2_GPIO_Port GPIOA
+#define SENS2_EXTI_IRQn EXTI0_1_IRQn
+#define RED_Pin GPIO_PIN_2
+#define RED_GPIO_Port GPIOA
+#define GREEN_Pin GPIO_PIN_3
+#define GREEN_GPIO_Port GPIOA
+#define LED_Pin GPIO_PIN_4
+#define LED_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 #define true  (1)
@@ -90,7 +90,7 @@ typedef enum {
 
 #define USB_Transmit(buf)                                                      \
   {                                                                            \
-    volatile uint8_t usb_ret;                                                           \
+    volatile uint8_t usb_ret;                                                  \
     do {                                                                       \
       usb_ret = CDC_Transmit_FS((uint8_t *)buf, strlen((const char *)buf));    \
     } while (usb_ret == USBD_BUSY);                                            \

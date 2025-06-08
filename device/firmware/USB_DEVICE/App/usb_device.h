@@ -2,12 +2,12 @@
 /**
   ******************************************************************************
   * @file           : usb_device.h
-  * @version        : v1.0_Cube
+  * @version        : v2.0_Cube
   * @brief          : Header for usb_device.c file.
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2025 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -27,8 +27,8 @@
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx.h"
-#include "stm32f4xx_hal.h"
+#include "stm32f0xx.h"
+#include "stm32f0xx_hal.h"
 #include "usbd_def.h"
 
 /* USER CODE BEGIN INCLUDE */
