@@ -1,0 +1,49 @@
+name: Build PCB
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'device/hardware/**'
+  workflow_call:
+  workflow_dispatch:
+  
+jobs:
+  build-pcb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo add-apt-repository ppa:kicad/kicad-8.0-releases
+          sudo apt-get update
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: kicad imagemagick
+          version: 1.0
+
+      - name: Build PCB schematic, artwork and 3d models
+        run: |
+          sudo apt-get install imagemagick
+          npm i -g svgexport
+          mkdir -p kicad
+          kicad-cli sch export svg device/hardware/fsk-traffic.kicad_sch -o kicad --exclude-drawing-sheet --no-background-color
+          kicad-cli pcb export svg device/hardware/fsk-traffic.kicad_pcb -o kicad/fsk-traffic-artwork.svg --layers "B.Cu,F.Cu,F.Silkscreen,B.Silkscreen,User.Drawings,Edge.Cuts" --exclude-drawing-sheet
+          svgexport kicad/fsk-traffic.svg kicad/fsk-traffic-schematic-transparent.png 8000:
+          convert kicad/fsk-traffic-schematic-transparent.png -trim -bordercolor transparent -border 100x100 kicad/fsk-traffic-schematic-transparent.png
+          svgexport kicad/fsk-traffic.svg kicad/fsk-traffic-schematic.png 8000: "svg{background:white;}"
+          convert kicad/fsk-traffic-schematic.png -trim -bordercolor white -border 100x100 kicad/fsk-traffic-schematic.png
+          mv kicad/fsk-traffic.svg fsk-traffic-schematic.svg
+          svgexport kicad/fsk-traffic-artwork.svg kicad/fsk-traffic-artwork-transparent.png 8000:
+          convert kicad/fsk-traffic-artwork-transparent.png -trim -bordercolor transparent -border 100x100 kicad/fsk-traffic-artwork-transparent.png
+          svgexport kicad/fsk-traffic-artwork.svg kicad/fsk-traffic-artwork.png 8000: "svg{background:#001023;}"
+          convert kicad/fsk-traffic-artwork.png -trim -bordercolor "#001023" -border 100x100 kicad/fsk-traffic-artwork.png
+          kicad-cli pcb export step -o kicad/fsk-traffic-3d.stp --include-tracks device/hardware/fsk-traffic.kicad_pcb
+          kicad-cli pcb export vrml -o kicad/fsk-traffic-3d.wrl device/hardware/fsk-traffic.kicad_pcb
+          cp -r device/hardware/jlcpcb/production_files kicad/gerbers
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fsk-traffic-pcb
+          path: kicad
+
