@@ -324,7 +324,9 @@ async function connect() {
       }
     }
   } catch (e) {
-    reader.releaseLock();
+    if (reader) {
+      reader.releaseLock();
+    }
 
     if (e.name === "NetworkError") {
       controller.green.active = false;
@@ -769,7 +771,9 @@ async function transmit(data) {
     notyf.error(`Failed to transmit: ${e}`);
     return false;
   } finally {
-    writer.releaseLock();
+    if (writer) {
+      writer.releaseLock();
+    }
   }
 }
 
