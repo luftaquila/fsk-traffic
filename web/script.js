@@ -332,7 +332,7 @@ async function connect() {
       controller.green.active = false;
 
       if (controller.clock) {
-        clearInterval(timer.clock);
+        clearInterval(controller.clock);
       }
 
       selector.connect.forEach(el => el.classList.add('red'));
