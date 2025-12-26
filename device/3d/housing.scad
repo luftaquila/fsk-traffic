@@ -38,7 +38,7 @@ molex_spacing = 10.2;   // mm (center to center gap between connectors)
 molex_latch_extra = 5;  // mm (extra height for latch)
 molex_labels = ["LIGHT", "SENS2", "SENS1"];  // labels for each connector
 label_size = 3.0;       // mm (text height)
-label_depth = 0.4;      // mm (engraving depth)
+label_depth = 0.8;      // mm (engraving depth)
 label_spacing = 1.2;    // character spacing (1 = normal, >1 = wider)
 label_weight = -0.05;   // mm (0 = normal, + = thicker, - = thinner)
 
@@ -178,10 +178,16 @@ module lid() {
             cube([usbc_width, wall_thickness + 2, usbc_height + port_margin * 2]);
         
         // Molex 5557 connector cutouts
-        // Port starts at PCB top surface and goes UP with latch clearance
+        // Port starts at PCB top surface and goes UP
+        molex_latch_width = 5;  // latch opening width (center only)
         for (x_pos = molex_positions) {
+            // Main connector opening (full width)
             translate([x_pos - (molex_width + 1)/2, outer_width/2 - wall_thickness - 1, pcb_top_z - port_margin])
-                cube([molex_width + 1, wall_thickness + 2, molex_height + molex_latch_extra + port_margin]);
+                cube([molex_width + 1, wall_thickness + 2, molex_height + port_margin]);
+            
+            // Latch opening (center 5mm only, exactly molex_latch_extra height)
+            translate([x_pos - molex_latch_width/2, outer_width/2 - wall_thickness - 1, pcb_top_z + molex_height])
+                cube([molex_latch_width, wall_thickness + 2, molex_latch_extra]);
         }
         
         // Horizontal screw holes through short side walls (clearance holes)
