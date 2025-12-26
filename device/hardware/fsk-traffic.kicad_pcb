@@ -6274,7 +6274,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2932326"
+		(property "LCSC" ""
 			(at 0 0 270)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6291,7 +6291,7 @@
 		(path "/bc8ff4d9-2daf-44b6-999e-95009f59aee1")
 		(sheetname "/")
 		(sheetfile "fsk-traffic.kicad_sch")
-		(attr smd)
+		(attr smd exclude_from_pos_files)
 		(fp_line
 			(start 0 1.56)
 			(end -0.8 1.56)
